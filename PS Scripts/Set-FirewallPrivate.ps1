@@ -35,3 +35,4 @@ write-host -Foregroundcolor Green (($(get-itemproperty -path $b -Name ProfileNam
 Restart-Service NlaSvc -Force
 }
 Set-FirewallPrivate
+test
