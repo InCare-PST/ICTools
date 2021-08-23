@@ -1,17 +1,28 @@
 function Set-Immutid {
     [CmdletBinding()]
     param (
-        
+        [switch]$report
     )
     
     begin {
         if (Get-Module -ListAvailable -Name Az.Accounts){}
-        else{}
-        $users = Get-ADUser -Filter * -Properties *
+        else{
+            Return "Azure module not installed."
+        }
+        if (Get-Module -ListAvailable -Name ActiveDirectory){}
+        else{
+            Return "Active diretory module not installed."
+        }
+        Connect-AzAccount
+        $azureUsers = Get-AzADUser
+        $adUsers = Get-ADUser -Filter * -Properties *
     }
     
     process {
-        foreach($user in $users) {
+        foreach($azuser in $azureUsers){
+            $adUser = $adUsers | Where-Object {$_.givenname -eq $azuser.GivenName -and $_.surname -eq $azuser.Surname}
+        }
+        foreach($user in $adUsers) {
             $immid = [system.convert]::ToBase64String(([GUID]($user.objectguid)).tobytearray())
             $props = @{
                 samaccountname = $user.samaccountname
