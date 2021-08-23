@@ -1,15 +1,17 @@
 function Set-Immutid {
-    [CmdletBinding(SupportsShouldProcess=$true)]
+    [CmdletBinding()]
     param (
         
     )
     
     begin {
+        if (Get-Module -ListAvailable -Name Az.Accounts){}
+        else{}
         $users = Get-ADUser -Filter * -Properties *
     }
     
     process {
-        userlist = foreach($user in $users){
+        foreach($user in $users) {
             $immid = [system.convert]::ToBase64String(([GUID]($user.objectguid)).tobytearray())
             $props = @{
                 samaccountname = $user.samaccountname
@@ -20,6 +22,7 @@ function Set-Immutid {
         
             $object | Select-Object name,samaccountname,immuteID
             }
+
     }
     
     end {
