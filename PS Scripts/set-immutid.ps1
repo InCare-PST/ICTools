@@ -21,7 +21,7 @@ function Set-Immutid {
     process {
         $userlist = foreach($azuser in $azureUsers){
             $adUser = $adUsers | Where-Object {$_.givenname -eq $azuser.GivenName -and $_.surname -eq $azuser.Surname}
-            if ($adUser.count -eq 1) {
+            if (@($adUser).count -eq 1) {
                 $immid = [system.convert]::ToBase64String(([GUID]($user.objectguid)).tobytearray())
                 $props = @{
                     name = $adUser.Name
