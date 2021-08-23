@@ -19,7 +19,7 @@ function Set-Immutid {
     }
     
     process {
-        foreach($azuser in $azureUsers){
+        $userlist = foreach($azuser in $azureUsers){
             $adUser = $adUsers | Where-Object {$_.givenname -eq $azuser.GivenName -and $_.surname -eq $azuser.Surname}
             if ($adUser.count -eq 1) {
                 $immid = [system.convert]::ToBase64String(([GUID]($user.objectguid)).tobytearray())
@@ -27,24 +27,23 @@ function Set-Immutid {
                     name = $adUser.Name
                     samaccountname = $adUser.samaccountname
                     objectguid = $adUser.objectguid
-                    mail = $azuser.mail
+                    mail = $azuser.Mail
                     immuteID = $immid
+                    lastlogondate = $adUser.lastlogondate
                 }
+                $tempobject = New-Object psobject -Property $props
+                $tempobject | Select-Object name,samaccountname,mail,lastlogondate,objectguid,immuteID
+            }
+            if ($adUser.count -lt 1) {
+                $props = @{
+                    name = $azuser.DisplayName
+                    mail = $azuser.Mail
+                }
+                $tempobject = New-Object psobject -Property $props
+                $tempobject | Select-Object name,mail
             }
         }
-
-        foreach($user in $adUsers) {
-            $immid = [system.convert]::ToBase64String(([GUID]($user.objectguid)).tobytearray())
-            $props = @{
-                samaccountname = $user.samaccountname
-                name = $user.Name
-                immuteID = $immid
-            }
-            $object = New-Object psobject -Property $props
-        
-            $object | Select-Object name,samaccountname,immuteID
-            }
-
+        $userlist | Select-Object name,samaccountname,mail,lastlogondate,objectguid,immuteID
     }
     
     end {
