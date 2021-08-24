@@ -1,7 +1,8 @@
 function Set-Immutid {
     [CmdletBinding()]
     param (
-        [switch]$apply
+        [switch]$apply,
+        [switch]$export
     )
     
     begin {
