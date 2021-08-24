@@ -1,20 +1,20 @@
 function Set-Immutid {
     [CmdletBinding()]
     param (
-        [switch]$report
+        [switch]$apply
     )
     
     begin {
-        if (Get-Module -ListAvailable -Name Az.Accounts){}
+        if (Get-Module -ListAvailable -Name azuread){}
         else{
-            Return "Azure module not installed."
+            Return "AzureAD module not installed."
         }
         if (Get-Module -ListAvailable -Name ActiveDirectory){}
         else{
             Return "Active diretory module not installed."
         }
-        Connect-AzAccount
-        $azureUsers = Get-AzADUser
+        Connect-AzureAD
+        $azureUsers = Get-AzureADUser
         $adUsers = Get-ADUser -Filter * -Properties *
     }
     
@@ -34,7 +34,7 @@ function Set-Immutid {
                 $tempobject = New-Object psobject -Property $props
                 $tempobject | Select-Object name,samaccountname,mail,lastlogondate,objectguid,immuteID
             }
-            if ($adUser.count -lt 1) {
+            if (@($adUser).count -lt 1) {
                 $props = @{
                     name = $azuser.DisplayName
                     mail = $azuser.Mail
@@ -43,11 +43,22 @@ function Set-Immutid {
                 $tempobject | Select-Object name,mail
             }
         }
-        $userlist | Select-Object name,samaccountname,mail,lastlogondate,objectguid,immuteID
+        $userlist.count
+        if($apply){
+            foreach ($cuser in $userlist) {
+                if ($cuser.immuteID) {
+                    $cuser.immuteID
+                }
+            }
+        }
+        elseif ($export) {
+            
+        }
+        #$userlist | Select-Object name,samaccountname,mail,lastlogondate,objectguid,immuteID
     }
     
     end {
         
     }
 }
-Set-Immutid
+Set-Immutid -apply
