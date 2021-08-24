@@ -2,21 +2,34 @@ function Set-Immutid {
     [CmdletBinding()]
     param (
         [switch]$apply,
-        [switch]$export
+
+        [switch]$export,
+
+        [string]$path = "c:\temp"
     )
     
     begin {
-        if (Get-Module -ListAvailable -Name azuread){}
+        if(!(Test-Path -Path $path)){New-Item -Path $path -Type Directory -Force}
+
+        if (Get-Module -ListAvailable -Name azuread){
+            Import-Module azuread
+        }
         else{
             Return "AzureAD module not installed."
         }
-        if (Get-Module -ListAvailable -Name ActiveDirectory){}
+        if (Get-Module -ListAvailable -Name ActiveDirectory){
+            Import-Module ActiveDirectory
+        }
         else{
             Return "Active diretory module not installed."
         }
+        if ($export) {
+            $date = Get-Date -Format yyyy-MM-dd-HH.mm.ss
+            $newpath = "$path\exporteduserlist-$date.csv"
+        }
         Connect-AzureAD
         $azureUsers = Get-AzureADUser
-        $adUsers = Get-ADUser -Filter * -Properties *
+        $adUsers = Get-ADUser -Filter * -Properties lastlogondate,objectguid
     }
     
     process {
@@ -48,18 +61,21 @@ function Set-Immutid {
         if($apply){
             foreach ($cuser in $userlist) {
                 if ($cuser.immuteID) {
-                    $cuser.immuteID
+                    Set-AzureADUser -ObjectId $cuser.objectid -ImmutableId $cuser.immuteID
+                    $cuser.mail
                 }
             }
         }
         elseif ($export) {
-            
+            $userlist | Select-Object name,samaccountname,mail,lastlogondate,objectguid,immuteID | Export-Csv -Path $newpath -NoTypeInformation
         }
-        #$userlist | Select-Object name,samaccountname,mail,lastlogondate,objectguid,immuteID
+        else{
+           $userlist | Select-Object name,samaccountname,mail,lastlogondate,objectguid,immuteID
+        }
     }
     
     end {
         
     }
 }
-Set-Immutid -apply
+Set-Immutid -export -path "c:\temp\ADcomparison"
