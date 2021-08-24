@@ -93,4 +93,4 @@ Specifies a path for the export file. Defauts to C:\Temp Default filename is exp
         
     }
 }
-Set-Immutid -export -path "c:\temp\ADcomparison"
+Set-Immutid -apply
