@@ -76,7 +76,8 @@ Specifies a path for the export file. Defauts to C:\Temp Default filename is exp
         if($apply){
             foreach ($cuser in $userlist) {
                 if ($cuser.immuteID) {
-                    Set-AzureADUser -ObjectId $cuser.objectid -ImmutableId $cuser.immuteID
+                    $objectid = $cuser.mail
+                    Set-AzureADUser -ObjectId $objectid -ImmutableId $cuser.immuteID
                     $cuser.mail
                 }
             }
