@@ -1079,6 +1079,20 @@ function Set-Immutid {
         end {
             
         }
+}
+
+function Get-FSMORoles{
+    $forest = Get-ADForest
+    $domain = Get-ADDomain
+
+    New-Object -TypeName psobject -Property @{
+        SchemaMaster = $forest.SchemaMaster
+        DomainNamingMaster = $forest.DomainNamingMaster
+        PDCEmulator = $domain.PDCEmulator
+        RIDMaster = $domain.RIDMaster
+        InfrastructureMaster = $domain.InfrastructureMaster
     }
-    
-Export-ModuleMember -Function Set-Immutid,Set-LTServerAdd,Get-InactiveUsers,Remove-MalFiles,Get-OnlineADComps,Add-DHCPv4Reservation,Get-LTServerAdd,Protect-Creds,Update-ICTools,Install-PSExec,Import-ICTHistory,Set-FixCellular
+}
+
+
+Export-ModuleMember -Function Get-FSMORoles,Set-Immutid,Set-LTServerAdd,Get-InactiveUsers,Remove-MalFiles,Get-OnlineADComps,Add-DHCPv4Reservation,Get-LTServerAdd,Protect-Creds,Update-ICTools,Install-PSExec,Import-ICTHistory,Set-FixCellular
