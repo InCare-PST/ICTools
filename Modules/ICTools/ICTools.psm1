@@ -651,7 +651,13 @@ Using this format the command can be added to the windows task scheduler. Make s
             [switch]$report,
 
             [Parameter(ParameterSetName="Reporting",Mandatory=$true)]
-            [string]$email,
+            [string]$toemail,
+
+            [Parameter(ParameterSetName="Reporting",Mandatory=$true)]
+            [string]$fromemail,
+
+            [Parameter(ParameterSetName="Reporting",Mandatory=$true)]
+            [string]$smtpserver,
 
             [Parameter(ParameterSetName="Reporting",Mandatory=$true)]
             [string]$ClientName
@@ -661,7 +667,7 @@ Using this format the command can be added to the windows task scheduler. Make s
         $CurrentFullLTVersion = (Get-ItemProperty -Path HKLM:\software\LabTech\Service\).'Version'
         $CurrentLTVersion = ([regex]::Match($CurrentFullLTVersion, '.*(?=\.)')).value
         if($report){
-            $credentials = Import-Clixml -path "$logdir\incare.xml"
+            #$credentials = Import-Clixml -path "$logdir\incare.xml"
         }
         if(!(Test-Path $LogDir)){
             New-Item -Path $LogDir -ItemType Directory
@@ -731,13 +737,12 @@ Using this format the command can be added to the windows task scheduler. Make s
                 $HTMLScratch = ConvertTo-Html -Title "InCare Agent Issues" -Head $precontent -CssUri $css -Body $b -PostContent "<H5><i>$(get-date)</i></H5>"
                 $Body = $HTMLScratch | Out-String
                 $MailMessage = @{
-                    To = "$email"
-                    From = "incare.analysis@incare360.com"
+                    To = "$toemail"
+                    From = "$fromemail"
                     Subject = "InCare Agent Report From $ClientName"
                     Body = "$body"
                     BodyAsHTML = $True
-                    Smtpserver = "notify.incare360.net"
-                    Credential = $credentials
+                    Smtpserver = "$smtpserver"
                     Attachments = "$LogDir\Get_LTAddr_Log.csv"
                 }
                 Send-MailMessage @MailMessage
