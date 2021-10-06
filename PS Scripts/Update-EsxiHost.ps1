@@ -6,7 +6,11 @@ function update-EsxiHost {
 
             [string]$depot = "https://hostupdate.vmware.com/software/VUM/PRODUCTION/main/vmw-depot-index.xml",
 
-            [string]$profile
+            [string]$vhprofile,
+
+            [string]$vibname,
+
+            [string]$vibversion
 
 
         )
@@ -30,8 +34,6 @@ Begin{
         }
     }
     $creds = Get-Credential -Message "Please Enter EXSi Host Credentials"
-    $vmtoolslight = "tools-light:11.2.6.17901274-18295176"
-    $vhupdate = "ESXi-6.5.0-20171204001-standard"
 
 }
 process{
@@ -39,13 +41,13 @@ process{
     #vib update
     $vibargs = $esxcli.software.vib.update.CreateArgs()
     $vibargs.depot = $depot
-    $vibargs.vibname = $vmtoolslight
+    $vibargs.vibname = "$($vibname):$($vibversion)"
     $esxcli.software.vib.update.invoke($vibargs)
 
 
     $argsupdate = $esxcli.software.profile.update.CreateArgs()
     $argsupdate.depot = $depot
-    $argsupdate.profile = $profile
+    $argsupdate.profile = $vhprofile
     $esxcli.software.profile.update.invoke($argsupdate)
 }
 end{
