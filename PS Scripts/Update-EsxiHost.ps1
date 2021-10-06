@@ -1,4 +1,4 @@
-function update-EsxiHost {
+function Update-EsxiHost {
     [cmdletbinding()]
         param(
 
