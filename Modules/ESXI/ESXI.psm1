@@ -18,7 +18,7 @@ function Update-EsxiHost {
 
     Begin{
         $powermodule = Get-InstalledModule -Name "vmware.powercli" -ErrorAction SilentlyContinue
-        if!([bool]$powermodule){
+        if (!([bool]$powermodule)){
             $title = 'PowerCLI Module'
             $message = 'PowerCLI was not detected, would you like to install?'
             $yes = New-Object System.Management.Automation.Host.ChoiceDescription '&Yes'
