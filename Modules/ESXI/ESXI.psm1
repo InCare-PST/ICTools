@@ -41,7 +41,7 @@ function Update-EsxiHost {
     }
 
     process{
-        $esxcli = Get-EsxCli -Server $VH -V2
+        $esxcli = Get-EsxCli -V2
         #vib update
         if ($updatevib) {
             $vibargs = $esxcli.software.vib.update.CreateArgs()
@@ -59,7 +59,7 @@ function Update-EsxiHost {
     }
 
     end{ 
-        Disconnect-VIServer -Server $VH       
+        Disconnect-VIServer      
     <#
         foreach ($VM in $VMS) {
             if($vm.PowerState -eq "PoweredOn"){
