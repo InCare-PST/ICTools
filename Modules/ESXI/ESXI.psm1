@@ -37,7 +37,21 @@ function Update-EsxiHost {
         $creds = Get-Credential -Message "Please Enter EXSi Host Credentials"
         Connect-VIServer -Credential $creds -Server $server -Force
         $VH = Get-VMHost
-        #$VMS = Get-VM
+        if (!([bool]$vhprofile)){
+            $listargs = $EXSCLI.software.sources.profile.list.CreateArgs()
+            $listargs.depot = $depot
+            $VHProfiles = $EXSCLI.software.sources.profile.list.Invoke($listargs)
+            $profileNames = $VHProfiles | Where-Object {$_.name -match "$($vh.version).*standard"} | Sort-Object -Property name | Select-Object -Property name  -Last 3
+
+            $profTitle = "Profile Choices"
+            $profMessage = "Please Choose a profile to install"
+            $choice01 = [System.Management.Automation.Host.ChoiceDescription]("$($profilenames[0].Name) &1")
+            $choice02 = [System.Management.Automation.Host.ChoiceDescription]("$($profilenames[1].Name) &2")
+            $choice03 = [System.Management.Automation.Host.ChoiceDescription]("$($profilenames[2].Name) &3")
+            $profOptions = [System.Management.Automation.Host.ChoiceDescription[]]($choice01,$choice02,$choice03)
+            $profResults = $host.UI.PromptForChoice($profTitle, $profMessage, $profOptions, 0) + 1
+            $vhprofile = $($profilenames[$profResults-1].Name)
+        }
     }
 
     process{
