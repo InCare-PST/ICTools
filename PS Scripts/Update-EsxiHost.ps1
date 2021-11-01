@@ -59,7 +59,7 @@ function Update-EsxiHost {
     }
 
     end{ 
-        Disconnect-VIServer       
+        Disconnect-VIServer -Server $server       
     <#
         foreach ($VM in $VMS) {
             if($vm.PowerState -eq "PoweredOn"){
