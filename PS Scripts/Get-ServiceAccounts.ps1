@@ -6,7 +6,7 @@
 
             [string]$path = "C:\temp",
 
-            [string]$username = "Administrator"
+            [string]$username
             
         )
     Begin{
@@ -23,18 +23,27 @@
                 $offlineservers +=$server
             }
         }
+        Write-Host -ForegroundColor Green "The following servers are online and will be examined."
+        $onlineservers.Name
+        Write-Host -ForegroundColor Red "The following servers are offline and will not be examined."
+        $offlineservers.Name
     }
     Process{
         $serverNameList = $onlineservers.Name
         $serviceList = Invoke-Command -ComputerName $serverNameList {
             Get-WmiObject win32_service | Select-Object systemName,displayname,startname
         }
-        $finallist = $serviceList | Where-Object {$_.startname -match $username} | Sort-Object -Property systemName
-        if ($export){
-             $finallist | Export-Csv -Path $path -NoTypeInformation 
+        if ([bool]$username){
+            $finalList = $serviceList | Where-Object {$_.startname -match $username} | Sort-Object -Property systemName
         }
         else {
-            $finallist
+            $finalList = $serviceList | Sort-Object -Property systemName
+        }
+        if ($export){
+             $finalList | Select-Object systemName,displayname,startname | Export-Csv -Path $path -NoTypeInformation 
+        }
+        else {
+            $finalList | Select-Object systemName,displayname,startname
         }
 
         <# Commenting out, going with Invoke-Command
@@ -71,6 +80,4 @@
     
     }
 }
-
-
-Get-CimInstance win32_service | select name,startname,startmode
+Get-ServiceAccounts -username incare
