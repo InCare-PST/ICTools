@@ -1141,7 +1141,7 @@ Function Get-ServiceAccounts{
             $finalList = $serviceList | Sort-Object -Property systemName
         }
         if ($export){
-             $finalList | Select-Object systemName,displayname,startname | Export-Csv -Path $path -NoTypeInformation 
+             $finalList | Select-Object systemName,displayname,startname | Export-Csv -Path "$path\serviceaccounts.csv" -NoTypeInformation 
         }
         else {
             $finalList | Select-Object systemName,displayname,startname
