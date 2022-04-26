@@ -1034,7 +1034,7 @@ function Set-Immutid {
                 $newpath = "$path\exporteduserlist-$date.csv"
             }
             Connect-AzureAD
-            $azureUsers = Get-AzureADUser
+            $azureUsers = Get-AzureADUser -All $true
             $adUsers = Get-ADUser -Filter * -Properties lastlogondate,objectguid
         }
         
