@@ -1047,12 +1047,13 @@ function Set-Immutid {
                         name = $adUser.Name
                         samaccountname = $adUser.samaccountname
                         objectguid = $adUser.objectguid
+                        AzureADid= $azuser.objectid
                         mail = $azuser.Mail
                         immuteID = $immid
                         lastlogondate = $adUser.lastlogondate
                     }
                     $tempobject = New-Object psobject -Property $props
-                    $tempobject | Select-Object name,samaccountname,mail,lastlogondate,objectguid,immuteID
+                    $tempobject | Select-Object name,samaccountname,mail,lastlogondate,AzureADid,objectguid,immuteID
                 }
                 if (@($adUser).count -lt 1) {
                     $props = @{
@@ -1067,14 +1068,14 @@ function Set-Immutid {
             if($apply){
                 foreach ($cuser in $userlist) {
                     if ($cuser.immuteID) {
-                        $objectid = $cuser.mail
+                        $objectid = $cuser.AzureADid
                         Set-AzureADUser -ObjectId $objectid -ImmutableId $cuser.immuteID
                         $cuser.mail
                     }
                 }
             }
             elseif ($export) {
-                $userlist | Select-Object name,samaccountname,mail,lastlogondate,objectguid,immuteID | Export-Csv -Path $newpath -NoTypeInformation
+                $userlist | Select-Object name,samaccountname,mail,lastlogondate,AzureADid,objectguid,immuteID | Export-Csv -Path $newpath -NoTypeInformation
             }
             else{
                $userlist | Select-Object name,samaccountname,mail,lastlogondate,objectguid,immuteID
