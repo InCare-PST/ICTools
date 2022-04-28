@@ -1078,7 +1078,7 @@ function Set-Immutid {
                 $userlist | Select-Object name,samaccountname,mail,lastlogondate,AzureADid,objectguid,immuteID | Export-Csv -Path $newpath -NoTypeInformation
             }
             else{
-               $userlist | Select-Object name,samaccountname,mail,lastlogondate,objectguid,immuteID
+               $userlist | Select-Object name,samaccountname,mail,lastlogondate,AzureADid,immuteID
             }
         }
         
