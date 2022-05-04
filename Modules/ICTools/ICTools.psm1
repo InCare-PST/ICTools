@@ -502,7 +502,7 @@ Synopsis
                 $OperatingSystem
             )
             if (Test-Connection -ComputerName $comp -Count 1 -Quiet) {
-                $Alive = "Yes"
+                #$Alive = "Yes"
                 if ([bool](Test-WSMan -ComputerName $comp -ErrorAction SilentlyContinue)){
                     $WSMAN = "Enabled"
                 }
@@ -545,7 +545,7 @@ Synopsis
                 $runspaces += [PSCustomObject]@{ Pipe = $runspace; Status = $runspace.BeginInvoke() }
             }
 
-            $onlinecomps = while ($runspaces.Status -ne $null){
+            $onlinecomps = while ($null -ne $runspaces.Status){
                 $completed = $runspaces | Where-Object { $_.Status.IsCompleted -eq $true }
                 foreach ($runspace in $completed)
                 {
