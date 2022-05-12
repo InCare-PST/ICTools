@@ -81,7 +81,7 @@ Process{
     }
 }
 End{
-    #Planned for Version number check to temp and only update if not latest version
+    #reloading module either by restarting powershell or removing and importing the module
     write-host "Reloading Powershell to access updated module" -ForegroundColor Green
     start-sleep -seconds 2
     if($NoRestart){
