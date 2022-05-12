@@ -13,6 +13,7 @@ foreach($mpath in $modulepaths){
         elseif ($instance -gt 1) {
             write-host "ICTools Module found in multiple locations" -ForegroundColor Red
             Write-Host "$installpath and in $mpath" -ForegroundColor Yellow
+            Exit
         }
     }
 }
