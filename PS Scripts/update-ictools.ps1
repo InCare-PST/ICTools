@@ -35,6 +35,8 @@ Begin{
     if(![bool]$installpath){
         $installpath = $modulepaths[0]
         $installed = $false
+    }else {
+        $installed = $true
     }
     #Get MD5 hash of online files
     $wc = New-Object System.Net.WebClient
@@ -67,8 +69,8 @@ Process{
         New-Item -Path $ictpath -ItemType directory
         $wc.DownloadFile($psmurl,$psmfile)
         $wc.DownloadFile($psdurl,$psdfile)
-    }
-    else{
+    }else{
+        $updated = $true
         #compare files and replace if necessary 
         if(!($psmhash.hash -eq $cpsmhash.hash)){
             remove-item $psmfile -Force
@@ -86,16 +88,21 @@ Process{
 }
 End{
     #reloading module either by restarting powershell or removing and importing the module
-    write-host "Reloading Powershell to access updated module" -ForegroundColor Green
-    start-sleep -seconds 2
-    if($NoRestart){
-        Import-Module ICTools
-        Remove-Module ICTools
-        Import-Module ICTools
+    if($updated){
+        write-host "Reloading Powershell to access updated module" -ForegroundColor Green
+        start-sleep -seconds 2
+        if($NoRestart){
+            Import-Module ICTools
+            Remove-Module ICTools
+            Import-Module ICTools
+        }
+        else{
+            start-process PowerShell
+            stop-process -Id $PID
+        }
     }
     else{
-        start-process PowerShell
-        stop-process -Id $PID
+        Write-Host "ICTools Module is already up to date." -ForegroundColor Green
     }
 }
     #End of Function
