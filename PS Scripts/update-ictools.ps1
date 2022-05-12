@@ -63,11 +63,22 @@ Begin{
     }
     if(![bool]$installpath){
         $installpath = "$Home\Documents\WindowsPowerShell\Modules\"
+        $installed = $false
     }
     #Get MD5 hash of online files
     $wc = New-Object System.Net.WebClient
-    $psmhash = Get-FileHash -InputStream ($wc.openread($psmurl)) -Algorithm MD5 -ErrorAction Stop
-    $psdhash = Get-FileHash -InputStream ($wc.openread($psdurl)) -Algorithm MD5 -ErrorAction Stop
+    try {
+        $psmhash = Get-FileHash -InputStream ($wc.openread($psmurl)) -Algorithm MD5 -ErrorAction Stop
+    }
+    catch {
+        {Write-Host "Could not access file at $($psmurl)" -ForegroundColor Yellow}
+    }
+    try {
+        $psdhash = Get-FileHash -InputStream ($wc.openread($psdurl)) -Algorithm MD5 -ErrorAction Stop
+    }
+    catch {
+        {Write-Host "Could not access file at $($psdurl)" -ForegroundColor Yellow}
+    }
 
     $ictpath = "$installpath\ICTools"
     $psmfile = "$ictpath\ICTools.psm1"
@@ -83,14 +94,22 @@ Begin{
     $cpsdhash = Get-FileHash -Path $psdfile -Algorithm MD5
 }
 Process{
-    #compare files and replace if necessary 
-    if(!($psmhash.hash -eq $cpsmhash.hash)){
-        remove-item $psmfile -Force
+    #install module if not present
+    if(!($installed)){
+        New-Item -Path $ictpath -ItemType directory
         $wc.DownloadFile($psmurl,$psmfile)
-    }
-    if(!($psdhash.hash -eq $cpsdhash.hash)){
-        remove-item $psdfile -Force
         $wc.DownloadFile($psdurl,$psdfile)
+    }
+    else{
+        #compare files and replace if necessary 
+        if(!($psmhash.hash -eq $cpsmhash.hash)){
+            remove-item $psmfile -Force
+            $wc.DownloadFile($psmurl,$psmfile)
+        }
+        if(!($psdhash.hash -eq $cpsdhash.hash)){
+            remove-item $psdfile -Force
+            $wc.DownloadFile($psdurl,$psdfile)
+        }
     }
 
 
@@ -128,4 +147,16 @@ stop-process -Id $PID
 }
 
 #End of Function
+}
+
+
+
+
+
+try {
+    $psmhash = Get-FileHash -InputStream ($wc.openread($psd2url)) -Algorithm MD5 -ErrorAction Stop
+}
+catch {
+    {Write-Host $error.exemption}
+    Exit
 }
