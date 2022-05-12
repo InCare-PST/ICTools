@@ -74,6 +74,10 @@ Process{
             remove-item $psmfile -Force
             $wc.DownloadFile($psmurl,$psmfile)
         }
+        else{
+            Write-Host "Module file is already up to date."
+            $updated = $false
+        }
         if(!($psdhash.hash -eq $cpsdhash.hash)){
             remove-item $psdfile -Force
             $wc.DownloadFile($psdurl,$psdfile)
