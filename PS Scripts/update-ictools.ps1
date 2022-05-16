@@ -61,7 +61,12 @@ Begin{
 
     #get the file hash for existing files
     $cpsmhash = Get-FileHash -Path $psmfile -Algorithm MD5
-    $cpsdhash = Get-FileHash -Path $psdfile -Algorithm MD5
+    $psdinstalled = $true
+    if(test-path -Path $psdfile){
+        $cpsdhash = Get-FileHash -Path $psdfile -Algorithm MD5
+    }else{
+        $psdinstalled = $false
+    }
 }
 Process{
     #install module if not present
@@ -80,8 +85,12 @@ Process{
             Write-Host "Module file is already up to date."
             $updated = $false
         }
-        if(!($psdhash.hash -eq $cpsdhash.hash)){
-            remove-item $psdfile -Force
+        if($psdinstalled){
+            if(!($psdhash.hash -eq $cpsdhash.hash)){
+                remove-item $psdfile -Force
+                $wc.DownloadFile($psdurl,$psdfile)
+            }
+        }else{
             $wc.DownloadFile($psdurl,$psdfile)
         }
     }
