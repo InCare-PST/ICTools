@@ -995,7 +995,7 @@ function Set-Immutid {
     Setup Immutable ID in Office 365 to streamline Azure AD sync
     .DESCRIPTION 
     Allows for a compareison between online office 365 and on premises AD to setup a 1 to 1 relationship between the two accounts for Azure AD Sync.
-    You have the option to export to CSV, apply the ID to the Azure Account or just display on screen.
+    You have the option to export to CSV, apply the ID to the Azure Account or just display on screen. The Default only displays the information on screen.
     .PARAMETER apply
     Applies the Immutable ID that is created to the Office 365/Azure AD account
     .PARAMETER export
