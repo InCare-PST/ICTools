@@ -22,7 +22,7 @@ Begin{
     foreach($mpath in $modulepaths){
         if(test-path $mpath\ICTools\ictools.psm1){
             $instance = $instance + 1
-            if($instance -le 1){
+            if($instance -eq 1){
                 $installpath = $mpath
             }
             elseif ($instance -gt 1) {
@@ -60,7 +60,9 @@ Begin{
     #$psp = New-Item -Path $Profile -Type File -Force
 
     #get the file hash for existing files
-    $cpsmhash = Get-FileHash -Path $psmfile -Algorithm MD5
+    if($installed){
+        $cpsmhash = Get-FileHash -Path $psmfile -Algorithm MD5
+    }
     $psdinstalled = $true
     if(test-path -Path $psdfile){
         $cpsdhash = Get-FileHash -Path $psdfile -Algorithm MD5
