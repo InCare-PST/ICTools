@@ -1,19 +1,3 @@
-$oldserver = "pstore1"
-$newserver = "padmin-dc01"
-$mappeddrives = Get-SmbMapping | Where-Object {$_.RemotePath -match $oldserver }
-foreach($drive in $mappeddrives){
-    $oldroot = $drive.RemotePath
-    $newroot = $oldroot.Replace($oldserver,$newserver)
-    if(test-path $newroot){
-            Remove-SmbMapping -LocalPath $drive.LocalPath -RemotePath $oldroot
-            New-SmbMapping -LocalPath $drive.LocalPath -RemotePath $newroot -Persistent $true
-        }else{
-            Write-Host "$($newrooot) not available. Please check $newserver path." -ForegroundColor Red
-        }
-
-}
-
-
 function update-mappeddrives{
     [cmdletbinding(DefaultParameterSetName="Default")]
         param(
