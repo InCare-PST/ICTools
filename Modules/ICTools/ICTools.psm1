@@ -545,7 +545,7 @@ Synopsis
                 $runspaces += [PSCustomObject]@{ Pipe = $runspace; Status = $runspace.BeginInvoke() }
             }
 
-            $onlinecomps = while ($null -ne $runspaces.Status){
+            $onlinecomps = while ($runspaces.Status -ne $null){
                 $completed = $runspaces | Where-Object { $_.Status.IsCompleted -eq $true }
                 foreach ($runspace in $completed)
                 {
