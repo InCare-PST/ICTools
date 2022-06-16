@@ -51,3 +51,5 @@ function update-mappeddrives{
         $newdrives | select-object localpath,remotepath
     }
 }
+
+update-mappeddrives -oldserver pstore1 -newserver padmin-dc01
