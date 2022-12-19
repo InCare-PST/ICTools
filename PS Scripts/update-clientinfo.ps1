@@ -18,9 +18,20 @@ function update-client {
                 }
             }
             else{
-                if($user.Mobilephone -notmatch $adaccount.MobilePhone){
-                    #$adaccount | Set-ADUser -MobilePhone $user.Mobilephone
-                }
+                #if(([bool]$user.Mobilephone) -and ($user.Mobilephone -notmatch $adaccount.MobilePhone)){
+                    if([bool]$user.Mobilephone){
+                        #$adaccount | Set-ADUser -MobilePhone $user.Mobilephone
+                        $adaccount | Select-Object name
+                        $props = @{
+                            username = $adaccount.name
+                            snowname = $user.name
+                            enabled = $adaccount.enabled
+                            currentmobile = $adaccount.mobilephone
+                            newmobile = $user.Mobilephone
+                        }
+                        $tempobject = New-Object psobject -Property $props
+                        $tempobject | Export-Csv -Path c:\temp\mobileupdate.csv -NoTypeInformation -Append
+                    }
             }
         }
     }
