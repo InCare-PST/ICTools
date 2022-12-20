@@ -34,7 +34,7 @@ function update-client {
                         if(([bool]$user.Mobilephone) -and !($user.Mobilephone -notmatch $adaccount.MobilePhone)){
                             #$adaccount | Set-ADUser -MobilePhone $user.Mobilephone
                             $tempmobile = $user.mobilephone -replace "\D+"
-                            $newmobile = "{0:(###) ###-####}" -f [int]$tempmobile
+                            $newmobile = "{0:(###) ###-####}" -f [int64]$tempmobile
                             $adaccount | Select-Object name
                             $props = @{
                                 username = $adaccount.name
