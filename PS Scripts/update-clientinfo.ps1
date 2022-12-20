@@ -10,9 +10,12 @@ function update-client {
             
         )
     Begin{
+
         $userinfo = Import-Csv -Path $path\$filename
+
         $adusers = Get-ADUser -Filter *
-        #$olduserinfo = Get-ADUser -Properties * -Filter *
+
+        $date = Get-Date -Format MM-dd-yyyy    
     }
     Process{
         foreach($user in $userinfo){
@@ -20,7 +23,7 @@ function update-client {
             if([bool]$adaccount){
                 if($user.enabled -eq "N"){
                     if(($adaccount.enabled -eq $true) -and ($disable -eq $false)){
-                        $adaccount | Select-Object name,userid,enabled | Export-Csv -Path $path\accountstodisable.csv -NoTypeInformation -Append
+                        $adaccount | Select-Object name,userid,enabled | Export-Csv -Path $path\accountstodisable$date.csv -NoTypeInformation -Append
                     }
                     elseif(($adaccount.enabled -eq $true) -and ($disable -eq $true)){
                         $adaccount | Set-ADUser -Enabled $false
@@ -41,7 +44,7 @@ function update-client {
                                 newmobile = $newmobile
                             }
                             $tempobject = New-Object psobject -Property $props
-                            $tempobject | Export-Csv -Path $path\mobileupdate.csv -NoTypeInformation -Append
+                            $tempobject | Export-Csv -Path $path\mobileupdate$date.csv -NoTypeInformation -Append
                         }
                 }
             }
@@ -49,7 +52,7 @@ function update-client {
 
                 Write-Host "Cannot find AD account for $($user.name) with user id $($user.userid)" -ForegroundColor Red
 
-                $user | Export-Csv -Path $path\noaccount.csv -NoTypeInformation -Append
+                $user | Export-Csv -Path $path\noaccount$date.csv -NoTypeInformation -Append
 
             }
         }
