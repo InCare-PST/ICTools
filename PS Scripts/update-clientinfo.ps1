@@ -1,74 +1,94 @@
 function update-clientinfo {
     [CmdletBinding()]
-        Param (
+    Param (
 
-            [string]$path = "c:\temp\",
+        [string]$path = "c:\temp\",
 
-            [string]$filename = "clientupdate.csv",
+        [string]$filename = "clientupdate.csv",
 
-            [switch]$disable = $false,
+        [switch]$disable = $false,
 
-            [switch]$apply = $false
+        [switch]$apply = $false
             
-        )
-    Begin{
+    )
+    Begin {
 
         $userinfo = Import-Csv -Path $path\$filename
 
         $adusers = Get-ADUser -Filter *
 
-        $date = Get-Date -Format MM-dd-yyyy  
+        $date = Get-Date -UFormat %e-%m-%G-%H.%M
+
+        $workingpath = "$path\ClientUpdate$date"
+
+        New-Item -Path $workingpath -Type Directory
         
-        if (Test-Path -Path $path\accountstodisable$date.csv) {
-            Remove-Item -Path $path\accountstodisable$date.csv
-        }
     }
-    Process{
-        foreach($user in $userinfo){
-            $adaccount = $adusers | Where-Object {$_.UserPrincipalName -match $user.userid}
-            if([bool]$adaccount){
-                if($user.enabled -eq "N"){
-                    if(($adaccount.enabled -eq $true) -and ($disable -eq $false)){
-                        $adaccount | Select-Object name,userid,enabled | Export-Csv -Path $path\accountstodisable$date.csv -NoTypeInformation -Append
+    Process {
+        foreach ($user in $userinfo) {
+            $adaccount = $adusers | Where-Object { $_.UserPrincipalName -match $user.userid }
+            if ([bool]$adaccount) {
+                if ($user.enabled -eq "N") {
+                    if (($adaccount.enabled -eq $true) -and ($disable -eq $false)) {
+                        $adaccount | Select-Object name, userid, enabled | Export-Csv -Path $workingpath\accountstodisable$date.csv -NoTypeInformation -Append
                     }
-                    elseif(($adaccount.enabled -eq $true) -and ($disable -eq $true)){
+                    elseif (($adaccount.enabled -eq $true) -and ($disable -eq $true)) {
                         $adaccount | Set-ADUser -Enabled $false
                     }
                 }
-                else{
-                    if(([bool]$user.Mobilephone) -and !($user.Mobilephone -notmatch $adaccount.MobilePhone)){
-                        $tempmobile = $user.mobilephone -replace "\D+"
-                        foreach($user in $userinfo){
+                else {
+                    if (([bool]$user.Mobilephone) -or ([bool]$user.Businessphone)) {
+                        if ([bool]$user.Mobilephone) {
                             $tempmobile = $user.mobilephone -replace "\D+"
-                            if($tempmobile.length -eq 10){
-                                $newmobile = "{0:+1 (###) ###-####}" -f [int64]$tempmobile
+                            $addcommand = "-MobilePhone $newmobile"
+                            if ($tempmobile.length -eq 10) {
+                                $newmobile = "{0:+1##########}" -f [int64]$tempmobile
                             }
                             elseif ($tempmobile.length -eq 11) {
-                                $newmobile = "{0:+# (###) ###-####}" -f [int64]$tempmobile
+                                $newmobile = "{0:+###########}" -f [int64]$tempmobile
                             }
                             else {
                                 Write-Host "$($user.name) with mobile number $($user.Mobilephone) does not match required formatting."
                             }
                         }
-                        $adaccount | Select-Object name
-                        if ($apply -eq $false) {
-                            $props = @{
-                                username = $adaccount.name
-                                snowname = $user.name
-                                enabled = $adaccount.enabled
-                                currentmobile = $adaccount.mobilephone
-                                newmobile = $newmobile
+                        if ([bool]$user.Businessphone) {
+                            $tempoffice = $user.Businessphone -replace "\D+"
+                            $addcommand = $addcommand + " -officephone $newoffice"
+                            if ($tempoffice.length -eq 10) {
+                                $newoffice = "{0:+1##########}" -f [int64]$tempoffice
                             }
-                            $tempobject = New-Object psobject -Property $props
-                            $tempobject | Export-Csv -Path $path\mobileupdate$date.csv -NoTypeInformation -Append
+                            elseif ($tempoffice.length -eq 11) {
+                                $newoffice = "{0:+###########}" -f [int64]$tempoffice
+                            }
+                            else {
+                                Write-Host "$($user.name) with Office number $($user.Businessphone) does not match required formatting."
+                            }
+                        }
+                        $adaccount | Select-Object name
+                        $props = @{
+                            username      = $adaccount.name
+                            snowname      = $user.name
+                            enabled       = $adaccount.enabled
+                            currentmobile = $adaccount.mobilephone
+                            newmobile     = $newmobile
+                            currentoffice = $adaccount.OfficePhone
+                            newoffice     = $newoffice
+                        }
+                        $tempobject = New-Object psobject -Property $props
+                        if ($apply -eq $false) {
+                            $tempobject | Select-Object username, snowname, enabled, currentmobile, newmobile, currentoffice, newoffice | Export-Csv -Path $workingpath\proposed-mobile-update$date.csv -NoTypeInformation -Append
                         }
                         else {
-                            $adaccount | Set-ADUser -MobilePhone $newmobile
+                            $adaccount | Set-ADUser $addcommand
+                            $tempobject | Select-Object username, snowname, enabled, currentmobile, newmobile, currentoffice, newoffice | Export-Csv -Path $workingpath\mobileupdate$date.csv -NoTypeInformation -Append
                         }
+                    }
+                    if (condition) {
+                        <# Action to perform if the condition is true #>
                     }
                 }
             }
-            else{
+            else {
 
                 Write-Host "Cannot find AD account for $($user.name) with user id $($user.userid)" -ForegroundColor Red
 
@@ -77,5 +97,5 @@ function update-clientinfo {
             }
         }
     }
-    End{}
+    End {}
 }
