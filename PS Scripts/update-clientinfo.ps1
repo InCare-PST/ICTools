@@ -34,7 +34,19 @@ function update-client {
                         if(([bool]$user.Mobilephone) -and !($user.Mobilephone -notmatch $adaccount.MobilePhone)){
                             #$adaccount | Set-ADUser -MobilePhone $user.Mobilephone
                             $tempmobile = $user.mobilephone -replace "\D+"
-                            $newmobile = "{0:(###) ###-####}" -f [int64]$tempmobile
+                            #$newmobile = "{0:(###) ###-####}" -f [int64]$tempmobile
+                            foreach($user in $userinfo){
+                                $tempmobile = $user.mobilephone -replace "\D+"
+                                if($tempmobile.length -eq 10){
+                                    $newmobile = "{0:+1 (###) ###-####}" -f [int64]$tempmobile
+                                }
+                                elseif ($tempmobile.length -eq 11) {
+                                    $newmobile = "{0:+# (###) ###-####}" -f [int64]$tempmobile
+                                }
+                                else {
+                                    Write-Host "$($user.name) with mobile number $($user.Mobilephone) does not match required formatting."
+                                }
+                            }
                             $adaccount | Select-Object name
                             $props = @{
                                 username = $adaccount.name
