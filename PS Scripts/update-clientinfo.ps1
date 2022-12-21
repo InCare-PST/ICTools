@@ -1,4 +1,4 @@
-function update-client {
+function update-clientinfo {
     [CmdletBinding()]
         Param (
 
@@ -6,7 +6,9 @@ function update-client {
 
             [string]$filename = "clientupdate.csv",
 
-            [switch]$disable = $false
+            [switch]$disable = $false,
+
+            [switch]$apply = $false
             
         )
     Begin{
@@ -15,7 +17,11 @@ function update-client {
 
         $adusers = Get-ADUser -Filter *
 
-        $date = Get-Date -Format MM-dd-yyyy    
+        $date = Get-Date -Format MM-dd-yyyy  
+        
+        if (Test-Path -Path $path\accountstodisable$date.csv) {
+            Remove-Item -Path $path\accountstodisable$date.csv
+        }
     }
     Process{
         foreach($user in $userinfo){
@@ -30,24 +36,22 @@ function update-client {
                     }
                 }
                 else{
-                    #if(([bool]$user.Mobilephone) -and ($user.Mobilephone -notmatch $adaccount.MobilePhone)){
-                        if(([bool]$user.Mobilephone) -and !($user.Mobilephone -notmatch $adaccount.MobilePhone)){
-                            #$adaccount | Set-ADUser -MobilePhone $user.Mobilephone
+                    if(([bool]$user.Mobilephone) -and !($user.Mobilephone -notmatch $adaccount.MobilePhone)){
+                        $tempmobile = $user.mobilephone -replace "\D+"
+                        foreach($user in $userinfo){
                             $tempmobile = $user.mobilephone -replace "\D+"
-                            #$newmobile = "{0:(###) ###-####}" -f [int64]$tempmobile
-                            foreach($user in $userinfo){
-                                $tempmobile = $user.mobilephone -replace "\D+"
-                                if($tempmobile.length -eq 10){
-                                    $newmobile = "{0:+1 (###) ###-####}" -f [int64]$tempmobile
-                                }
-                                elseif ($tempmobile.length -eq 11) {
-                                    $newmobile = "{0:+# (###) ###-####}" -f [int64]$tempmobile
-                                }
-                                else {
-                                    Write-Host "$($user.name) with mobile number $($user.Mobilephone) does not match required formatting."
-                                }
+                            if($tempmobile.length -eq 10){
+                                $newmobile = "{0:+1 (###) ###-####}" -f [int64]$tempmobile
                             }
-                            $adaccount | Select-Object name
+                            elseif ($tempmobile.length -eq 11) {
+                                $newmobile = "{0:+# (###) ###-####}" -f [int64]$tempmobile
+                            }
+                            else {
+                                Write-Host "$($user.name) with mobile number $($user.Mobilephone) does not match required formatting."
+                            }
+                        }
+                        $adaccount | Select-Object name
+                        if ($apply -eq $false) {
                             $props = @{
                                 username = $adaccount.name
                                 snowname = $user.name
@@ -58,6 +62,10 @@ function update-client {
                             $tempobject = New-Object psobject -Property $props
                             $tempobject | Export-Csv -Path $path\mobileupdate$date.csv -NoTypeInformation -Append
                         }
+                        else {
+                            $adaccount | Set-ADUser -MobilePhone $newmobile
+                        }
+                    }
                 }
             }
             else{
