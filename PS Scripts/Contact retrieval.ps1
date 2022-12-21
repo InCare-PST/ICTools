@@ -1,0 +1,1 @@
+Get-ADUser -Filter * -Properties * | Where-Object {$_.enabled -eq $true -and [bool]($_.surname) -eq $true} | Select-Object @{N='Name'; E={$_.displayname}},@{N='Email';E={$_.userprincipalname}},MobilePhone,OfficePhone,Enabled
