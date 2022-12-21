@@ -34,6 +34,8 @@ function update-clientinfo {
                     }
                     elseif (($adaccount.enabled -eq $true) -and ($disable -eq $true)) {
                         $adaccount | Set-ADUser -Enabled $false
+                        $disabledaccount = Get-ADUser -Filter * -Properties enabled| Where-Object {$_.name -match $adaccount.name}
+                        $disabledaccount | Select-Object name, userid, enabled | Export-Csv -Path $workingpath\accountsdisable$date.csv -NoTypeInformation -Append
                     }
                 }
                 else {
@@ -78,13 +80,10 @@ function update-clientinfo {
                         if ($apply -eq $false) {
                             $tempobject | Select-Object username, snowname, enabled, currentmobile, newmobile, currentoffice, newoffice | Export-Csv -Path $workingpath\proposed-mobile-update$date.csv -NoTypeInformation -Append
                         }
-                        else {
+                        elseif ($apply -eq $true) {
                             $adaccount | Set-ADUser $addcommand
-                            $tempobject | Select-Object username, snowname, enabled, currentmobile, newmobile, currentoffice, newoffice | Export-Csv -Path $workingpath\mobileupdate$date.csv -NoTypeInformation -Append
+                            $tempobject | Select-Object username, snowname, enabled, currentmobile, newmobile, currentoffice, newoffice | Export-Csv -Path $workingpath\mobile-update$date.csv -NoTypeInformation -Append
                         }
-                    }
-                    if (condition) {
-                        <# Action to perform if the condition is true #>
                     }
                 }
             }
@@ -92,7 +91,7 @@ function update-clientinfo {
 
                 Write-Host "Cannot find AD account for $($user.name) with user id $($user.userid)" -ForegroundColor Red
 
-                $user | Export-Csv -Path $path\noaccount$date.csv -NoTypeInformation -Append
+                $user | Export-Csv -Path $workingpath\noaccount$date.csv -NoTypeInformation -Append
 
             }
         }
