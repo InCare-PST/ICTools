@@ -34,20 +34,24 @@ function update-clientinfo {
                     }
                     elseif (($adaccount.enabled -eq $true) -and ($disable -eq $true)) {
                         $adaccount | Set-ADUser -Enabled $false
-                        $disabledaccount = Get-ADUser -Filter * -Properties enabled| Where-Object {$_.name -match $adaccount.name}
+                        $disabledaccount = Get-ADUser -Filter * -Properties enabled | Where-Object { $_.name -match $adaccount.name }
                         $disabledaccount | Select-Object name, userid, enabled | Export-Csv -Path $workingpath\accountsdisable$date.csv -NoTypeInformation -Append
                     }
                 }
                 else {
                     if (([bool]$user.Mobilephone) -or ([bool]$user.Businessphone)) {
+                        $addcommand = @{}
+                        $newmobile = ""
+                        $newoffice = ""
                         if ([bool]$user.Mobilephone) {
                             $tempmobile = $user.mobilephone -replace "\D+"
-                            $addcommand = "-MobilePhone $newmobile"
                             if ($tempmobile.length -eq 10) {
                                 $newmobile = "{0:+1##########}" -f [int64]$tempmobile
+                                $addcommand['MobilePhone'] = $newmobile
                             }
                             elseif ($tempmobile.length -eq 11) {
                                 $newmobile = "{0:+###########}" -f [int64]$tempmobile
+                                $addcommand['MobilePhone'] = $newmobile
                             }
                             else {
                                 Write-Host "$($user.name) with mobile number $($user.Mobilephone) does not match required formatting."
@@ -55,12 +59,13 @@ function update-clientinfo {
                         }
                         if ([bool]$user.Businessphone) {
                             $tempoffice = $user.Businessphone -replace "\D+"
-                            $addcommand = $addcommand + " -officephone $newoffice"
                             if ($tempoffice.length -eq 10) {
                                 $newoffice = "{0:+1##########}" -f [int64]$tempoffice
+                                $addcommand['OfficePhone'] = $newoffice
                             }
                             elseif ($tempoffice.length -eq 11) {
                                 $newoffice = "{0:+###########}" -f [int64]$tempoffice
+                                $addcommand['OfficePhone'] = $newoffice
                             }
                             else {
                                 Write-Host "$($user.name) with Office number $($user.Businessphone) does not match required formatting."
@@ -81,7 +86,16 @@ function update-clientinfo {
                             $tempobject | Select-Object username, snowname, enabled, currentmobile, newmobile, currentoffice, newoffice | Export-Csv -Path $workingpath\proposed-mobile-update$date.csv -NoTypeInformation -Append
                         }
                         elseif ($apply -eq $true) {
-                            $adaccount | Set-ADUser $addcommand
+                            if (([bool]$newmobile) -and ([bool]$newoffice)) {
+                                Set-ADUser -Identity $adaccount.SamAccountName -OfficePhone $newoffice -MobilePhone $newmobile
+                            }
+                            elseif (([bool]$newmobile) -and (![bool]$newoffice)) {
+                                Set-ADUser -Identity $adaccount.SamAccountName -MobilePhone $newmobile
+                            }
+                            elseif ((![bool]$newmobile) -and ([bool]$newoffice)) {
+                                Set-ADUser -Identity $adaccount.SamAccountName -OfficePhone $newoffice
+                            }
+                            #Set-ADUser -Identity $adaccount.SamAccountName $addcommand
                             $tempobject | Select-Object username, snowname, enabled, currentmobile, newmobile, currentoffice, newoffice | Export-Csv -Path $workingpath\mobile-update$date.csv -NoTypeInformation -Append
                         }
                     }
