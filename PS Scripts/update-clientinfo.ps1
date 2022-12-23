@@ -1,3 +1,23 @@
+function get-clientinfo {
+    [CmdletBinding()]
+        param (
+
+        [string]$ClientName,
+
+        [string]$path = "C:\temp"
+
+    )
+    Begin{
+        $userlist = Get-ADUser -Filter * -Properties MobilePhone,OfficePhone,Enabled,displayname
+    }
+    Process{
+        $EnabledUsers = $userlist | Where-Object {$_.enabled -eq $true -and [bool]($_.surname) -eq $true -and $_.name -notmatch "360"} 
+        $EnabledUsers | Select-Object @{N='Name'; E={$_.displayname}},@{N='Email';E={$_.userprincipalname}},MobilePhone,OfficePhone,Enabled
+    }
+    End{
+
+    }
+}
 function update-clientinfo {
     [CmdletBinding()]
     Param (
