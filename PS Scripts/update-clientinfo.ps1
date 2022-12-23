@@ -30,12 +30,12 @@ function update-clientinfo {
             if ([bool]$adaccount) {
                 if ($user.enabled -eq "N") {
                     if (($adaccount.enabled -eq $true) -and ($disable -eq $false)) {
-                        $adaccount | Select-Object name, userid, enabled | Export-Csv -Path $workingpath\accountstodisable$date.csv -NoTypeInformation -Append
+                        $adaccount | Select-Object name, userid, enabled | Export-Csv -Path $workingpath\accountstodisable.csv -NoTypeInformation -Append
                     }
                     elseif (($adaccount.enabled -eq $true) -and ($disable -eq $true)) {
                         $adaccount | Set-ADUser -Enabled $false
                         $disabledaccount = Get-ADUser -Filter * -Properties enabled | Where-Object { $_.name -match $adaccount.name }
-                        $disabledaccount | Select-Object name, userid, enabled | Export-Csv -Path $workingpath\accountsdisable$date.csv -NoTypeInformation -Append
+                        $disabledaccount | Select-Object name, userid, enabled | Export-Csv -Path $workingpath\accountsdisable.csv -NoTypeInformation -Append
                     }
                 }
                 else {
@@ -83,7 +83,7 @@ function update-clientinfo {
                         }
                         $tempobject = New-Object psobject -Property $props
                         if ($apply -eq $false) {
-                            $tempobject | Select-Object username, snowname, enabled, currentmobile, newmobile, currentoffice, newoffice | Export-Csv -Path $workingpath\proposed-mobile-update$date.csv -NoTypeInformation -Append
+                            $tempobject | Select-Object username, snowname, enabled, currentmobile, newmobile, currentoffice, newoffice | Export-Csv -Path $workingpath\proposed-mobile-update.csv -NoTypeInformation -Append
                         }
                         elseif ($apply -eq $true) {
                             if (([bool]$newmobile) -and ([bool]$newoffice)) {
@@ -96,7 +96,7 @@ function update-clientinfo {
                                 Set-ADUser -Identity $adaccount.SamAccountName -OfficePhone $newoffice
                             }
                             #Set-ADUser -Identity $adaccount.SamAccountName $addcommand
-                            $tempobject | Select-Object username, snowname, enabled, currentmobile, newmobile, currentoffice, newoffice | Export-Csv -Path $workingpath\mobile-update$date.csv -NoTypeInformation -Append
+                            $tempobject | Select-Object username, snowname, enabled, currentmobile, newmobile, currentoffice, newoffice | Export-Csv -Path $workingpath\mobile-update.csv -NoTypeInformation -Append
                         }
                     }
                 }
@@ -105,7 +105,7 @@ function update-clientinfo {
 
                 Write-Host "Cannot find AD account for $($user.name) with user id $($user.userid)" -ForegroundColor Red
 
-                $user | Export-Csv -Path $workingpath\noaccount$date.csv -NoTypeInformation -Append
+                $user | Export-Csv -Path $workingpath\noaccount.csv -NoTypeInformation -Append
 
             }
         }
