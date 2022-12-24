@@ -135,6 +135,8 @@ function update-clientinfo {
     }
     End {
         Compress-Archive -LiteralPath $workingpath -DestinationPath $path\ClientUpdate$date.zip
-        Remove-Item -LiteralPath $workingpath -Force
+        if (Test-Path -Path $path\ClientUpdate$date.zip) {
+            Remove-Item -LiteralPath $workingpath -Force
+        }
     }
 }
