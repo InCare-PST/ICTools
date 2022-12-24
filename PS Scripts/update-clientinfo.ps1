@@ -133,5 +133,8 @@ function update-clientinfo {
             }
         }
     }
-    End {}
+    End {
+        Compress-Archive -LiteralPath $workingpath -DestinationPath $path\ClientUpdate$date.zip
+        Remove-Item -LiteralPath $workingpath -Force
+    }
 }
