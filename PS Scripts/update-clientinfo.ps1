@@ -1,21 +1,24 @@
 function get-clientinfo {
     [CmdletBinding()]
-        param (
+    param (
 
         [string]$ClientName,
 
         [string]$path = "C:\temp"
 
     )
-    Begin{
-        $userlist = Get-ADUser -Filter * -Properties MobilePhone,OfficePhone,Enabled,displayname
+    Begin {
+        if (![bool]$ClientName) {
+            $ClientName = Read-Host -Prompt "Please enter Client Name"
+        }
+        $userlist = Get-ADUser -Filter * -Properties MobilePhone, OfficePhone, Enabled, displayname
     }
-    Process{
-        $EnabledUsers = $userlist | Where-Object {$_.enabled -eq $true -and [bool]($_.surname) -eq $true -and $_.name -notmatch "360"} 
-        $EnabledUsers | Select-Object @{N='Name'; E={$_.displayname}},@{N='Email';E={$_.userprincipalname}},MobilePhone,OfficePhone,Enabled
+    Process {
+        $EnabledUsers = $userlist | Where-Object { $_.enabled -eq $true -and [bool]($_.surname) -eq $true -and $_.name -notmatch "360" } 
+        $EnabledUsers | Select-Object @{N = 'Name'; E = { $_.displayname } }, @{N = 'Email'; E = { $_.userprincipalname } }, MobilePhone, OfficePhone, Enabled | Export-Csv -Path $path\$ClientName.csv -NoTypeInformation
     }
-    End{
-
+    End {
+        
     }
 }
 function update-clientinfo {
@@ -35,7 +38,7 @@ function update-clientinfo {
 
         $userinfo = Import-Csv -Path $path\$filename
 
-        $adusers = Get-ADUser -Filter *
+        $adusers = Get-ADUser -Filter * -Properties MobilePhone, OfficePhone
 
         $date = Get-Date -UFormat %e-%m-%G-%H.%M
 
@@ -46,20 +49,20 @@ function update-clientinfo {
     }
     Process {
         foreach ($user in $userinfo) {
-            $adaccount = $adusers | Where-Object { $_.UserPrincipalName -match $user.userid }
+            $adaccount = $adusers | Where-Object { $_.UserPrincipalName -match $user.email }
             if ([bool]$adaccount) {
-                if ($user.enabled -eq "N") {
+                if ($user.enabled -eq "FALSE") {
                     if (($adaccount.enabled -eq $true) -and ($disable -eq $false)) {
-                        $adaccount | Select-Object name, userid, enabled | Export-Csv -Path $workingpath\accountstodisable.csv -NoTypeInformation -Append
+                        $adaccount | Select-Object name, UserPrincipalName, enabled | Export-Csv -Path $workingpath\accountstodisable.csv -NoTypeInformation -Append
                     }
                     elseif (($adaccount.enabled -eq $true) -and ($disable -eq $true)) {
                         $adaccount | Set-ADUser -Enabled $false
                         $disabledaccount = Get-ADUser -Filter * -Properties enabled | Where-Object { $_.name -match $adaccount.name }
-                        $disabledaccount | Select-Object name, userid, enabled | Export-Csv -Path $workingpath\accountsdisable.csv -NoTypeInformation -Append
+                        $disabledaccount | Select-Object name, UserPrincipalName, enabled | Export-Csv -Path $workingpath\accountsdisable.csv -NoTypeInformation -Append
                     }
                 }
                 else {
-                    if (([bool]$user.Mobilephone) -or ([bool]$user.Businessphone)) {
+                    if (([bool]$user.Mobilephone) -or ([bool]$user.OfficePhone)) {
                         $addcommand = @{}
                         $newmobile = ""
                         $newoffice = ""
@@ -77,8 +80,8 @@ function update-clientinfo {
                                 Write-Host "$($user.name) with mobile number $($user.Mobilephone) does not match required formatting."
                             }
                         }
-                        if ([bool]$user.Businessphone) {
-                            $tempoffice = $user.Businessphone -replace "\D+"
+                        if ([bool]$user.OfficePhone) {
+                            $tempoffice = $user.OfficePhone -replace "\D+"
                             if ($tempoffice.length -eq 10) {
                                 $newoffice = "{0:+1##########}" -f [int64]$tempoffice
                                 $addcommand['OfficePhone'] = $newoffice
