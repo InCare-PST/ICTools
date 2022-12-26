@@ -94,7 +94,7 @@ function update-clientinfo {
                                 Write-Host "$($user.name) with Office number $($user.Businessphone) does not match required formatting."
                             }
                         }
-                        $adaccount | Select-Object name
+                        #$adaccount | Select-Object name
                         $props = @{
                             username      = $adaccount.name
                             snowname      = $user.name
