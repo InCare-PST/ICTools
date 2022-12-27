@@ -1,7 +1,8 @@
-$gastrosnow = Import-Csv -Path c:\temp\gastrosnow.csv
-$approved = $gastrosnow | Where-Object {$_.u_approval_status -eq "Approved"}
+$clientsnow = Import-Csv -Path c:\temp\clientsnow.csv
+$adusers = Get-ADUser -Filter * -Properties enabled,mail
+$approved = $clientsnow | Where-Object {$_.u_approval_status -eq "Approved"}
 foreach($user in $approved){
-    $useraccount = Get-ADUser -Filter * -Properties enabled| Where-Object {$_.UserPrincipalName -match $user.email}
+    $useraccount = $adusers | Where-Object {$_.mail -match $user.email}
     $props = @{
         Name = $useraccount.Name
         SNOWName = $user.name
