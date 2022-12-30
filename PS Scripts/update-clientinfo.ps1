@@ -32,7 +32,7 @@ function Get-ClientInfo {
 function Update-ClientInfo {
     <#
     .SYNOPSIS Cmdlet updates and or disables users. 
-    .DESCRIPTION Cmdlet updates information based on a CSV that is exported using Get-ClienInfo. The updated fields are Mobile Number, Office Number, and if the account should be disabled. Numbers will be formatted as +1##########
+    .DESCRIPTION Cmdlet updates information based on a CSV that is exported using Get-ClienInfo. The updated fields are Mobile Number, Office Number, and if the account should be disabled. Numbers will be formatted as +1########## Reports will be placed in a zip file in the directory determined by the "Path" Parameter.
     .PARAMETER path Provides the base path to the csv file with the updated Contact phone info. Defaults to C:\temp
     .PARAMETER filename Provides the name of the CSV file. The default is clietnupdate.csv
     .PARAMETER disable If this parameter is enabled then any user that is marked to be disabled in the csv file will be disabled.
@@ -165,6 +165,13 @@ function Update-ClientInfo {
     }
 }
 function Compare-SnowContacts {
+    <#
+    .SYNOPSIS Compares contacts from SNOW to Client's AD
+    .DESCRIPTION This cmdlet will compare an exported list of contacts from SNOW to local client AD to determine if there are any disabled users currently approved in SNOW for call in.
+    .PARAMETER path Provides the base path to the csv file.
+    .PARAMETER file Declares the name of the csv file. Default is SnowExport.csv
+    .PARAMETER clientname sets the name of the client for the exported report. If not set it will be promopted for.
+    #>
     [CmdletBinding()]
     param (
         [string]$path = "c:\temp",
