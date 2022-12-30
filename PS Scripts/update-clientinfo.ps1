@@ -1,4 +1,12 @@
-function get-clientinfo {
+function Get-ClientInfo {
+    <#
+    .SYNOPSIS Collects account information and exports to csv
+    .DESCRIPTION Cmdlet for exporting current enabled users to .csv file to be examined by client for updating.
+    .PARAMETER ClientName Name of the client. This will be used for the exported file name. If not declared the script will prompt for it.
+    .PARAMETER path Declares the folder location for the exported csv file. Defaults to "C:\temp"
+    .EXAMPLE Get-ClientInfo
+    .EXAMPLE Get-ClientInfo -ClientName ExampleCompany -path C:\users\username\documents
+    #>
     [CmdletBinding()]
     param (
 
@@ -21,7 +29,15 @@ function get-clientinfo {
         
     }
 }
-function update-clientinfo {
+function Update-ClientInfo {
+    <#
+    .SYNOPSIS Cmdlet updates and or disables users. 
+    .DESCRIPTION Cmdlet updates information based on a CSV that is exported using Get-ClienInfo. The updated fields are Mobile Number, Office Number, and if the account should be disabled. Numbers will be formatted as +1##########
+    .PARAMETER path Provides the base path to the csv file with the updated Contact phone info. Defaults to C:\temp
+    .PARAMETER filename Provides the name of the CSV file. The default is clietnupdate.csv
+    .PARAMETER disable If this parameter is enabled then any user that is marked to be disabled in the csv file will be disabled.
+    .PARAMETER apply Used to apply the mobile and office numbers in the CSV. By default the cmdlet will only report on proposed changes.
+    #>
     [CmdletBinding()]
     Param (
 
@@ -42,7 +58,7 @@ function update-clientinfo {
             Write-Error "$filename does not exist at $path. Cannot update contact information."
             Break
         }
-        
+
         $adusers = Get-ADUser -Filter * -Properties MobilePhone, OfficePhone
 
         $date = Get-Date -UFormat %e-%m-%G-%H.%M
