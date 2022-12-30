@@ -37,6 +37,9 @@ function Update-ClientInfo {
     .PARAMETER filename Provides the name of the CSV file. The default is clietnupdate.csv
     .PARAMETER disable If this parameter is enabled then any user that is marked to be disabled in the csv file will be disabled.
     .PARAMETER apply Used to apply the mobile and office numbers in the CSV. By default the cmdlet will only report on proposed changes.
+    .EXAMPLE Update-ClientInfo
+    .EXAMPLE Update-ClientInfo -disable -apply
+    .EXAMPLE Update-ClientInfo -path c:\users\usersname\documents -filename clientname.csv
     #>
     [CmdletBinding()]
     Param (
