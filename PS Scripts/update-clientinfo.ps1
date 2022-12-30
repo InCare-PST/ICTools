@@ -35,9 +35,14 @@ function update-clientinfo {
             
     )
     Begin {
-
-        $userinfo = Import-Csv -Path $path\$filename
-
+        if (Test-Path -Path $path\$filename) {
+            $userinfo = Import-Csv -Path $path\$filename
+        }
+        else {
+            Write-Error "$filename does not exist at $path. Cannot update contact information."
+            Break
+        }
+        
         $adusers = Get-ADUser -Filter * -Properties MobilePhone, OfficePhone
 
         $date = Get-Date -UFormat %e-%m-%G-%H.%M
