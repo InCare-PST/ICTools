@@ -116,3 +116,4 @@ End{
 }
     #End of Function
 }
+Update-CIModule
