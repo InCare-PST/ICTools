@@ -338,9 +338,9 @@ End{
         write-host "Reloading Powershell to access updated module" -ForegroundColor Green
         start-sleep -seconds 2
         if($NoRestart){
-            Import-Module ICTools
-            Remove-Module ICTools
-            Import-Module ICTools
+            Import-Module $PSMName
+            Remove-Module $PSMName
+            Import-Module $PSMName
         }
         else{
             start-process PowerShell
