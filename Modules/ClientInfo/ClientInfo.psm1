@@ -342,7 +342,7 @@ End{
             Import-Module $PSMName
     }
     else{
-        Write-Host "ICTools Module is already up to date." -ForegroundColor Green
+        Write-Host "$($PSMName) Module is already up to date." -ForegroundColor Green
     }
 }
     #End of Function
