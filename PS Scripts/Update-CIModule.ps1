@@ -11,8 +11,8 @@ Function Update-CIModule {
 Begin{
   
     #Production Variables
-    $psmurl = "https://raw.githubusercontent.com/InCare-PST/$($PSMName)/master/Modules/$($PSMName)/$($PSMName).psm1"
-    $psdurl = "https://raw.githubusercontent.com/InCare-PST/$($PSMName)/master/Modules/$($PSMName)/$($PSMName).psd1"
+    $psmurl = "https://raw.githubusercontent.com/InCare-PST/ICTools/master/Modules/$($PSMName)/$($PSMName).psm1"
+    $psdurl = "https://raw.githubusercontent.com/InCare-PST/ICTools/master/Modules/$($PSMName)/$($PSMName).psd1"
             
     #Determine current Module path
     $modulepaths = $env:PSModulePath.Split(";")
