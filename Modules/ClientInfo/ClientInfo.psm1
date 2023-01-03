@@ -335,17 +335,11 @@ Process{
 End{
     #reloading module either by restarting powershell or removing and importing the module
     if($updated){
-        write-host "Reloading Powershell to access updated module" -ForegroundColor Green
+        write-host "Reloading $($PSMName) Module." -ForegroundColor Green
         start-sleep -seconds 2
-        if($NoRestart){
             Import-Module $PSMName
             Remove-Module $PSMName
             Import-Module $PSMName
-        }
-        else{
-            start-process PowerShell
-            stop-process -Id $PID
-        }
     }
     else{
         Write-Host "ICTools Module is already up to date." -ForegroundColor Green
