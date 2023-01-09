@@ -175,7 +175,7 @@ function Update-ClientInfo {
     End {
         Compress-Archive -LiteralPath $workingpath -DestinationPath $path\ClientUpdate$date.zip
         if (Test-Path -Path $path\ClientUpdate$date.zip) {
-            Remove-Item -LiteralPath $workingpath -Force
+            Remove-Item -LiteralPath $workingpath -Recurse -Force
         }
     }
 }
