@@ -54,8 +54,8 @@
                 if ($Export) {
                     Write-Verbose "Exporting to CSV"
                     $Inactive | Export-Csv -Path "$Path\$FileName" -NoTypeInformation
-                    $TotalUsers=Write-Host "Total Enabled Users" $Users.count
-                    $TotalInActive=Write-Host "Total Inactive Users" $Inactive.count
+                    Write-Host "Total Enabled Users" $Users.count
+                    Write-Host "Total Inactive Users" $Inactive.count
                 }
                 Else {
                     $Inactive | Out-Host
