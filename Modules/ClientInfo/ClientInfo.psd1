@@ -27,10 +27,10 @@ Author = 'Brandon Bristow'
 CompanyName = 'Thrive Networks'
 
 # Copyright statement for this module
-Copyright = '(c) Bristow. All rights reserved.'
+Copyright = '(c) Brandon Bristow. All rights reserved.'
 
 # Description of the functionality provided by this module
-# Description = ''
+Description = 'For updating and comparing onsite user contacts to SNOW records.'
 
 # Minimum version of the PowerShell engine required by this module
 # PowerShellVersion = ''
