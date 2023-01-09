@@ -21,7 +21,7 @@
 
         [string]$Path="C:\temp",
 
-        [SecureString]$Credentials,
+        [pscredential]$Credentials,
 
         [switch]$Export,
 
@@ -39,7 +39,7 @@
             $Period = ($Date).adddays(-$time)
             $FileName = $Date.tostring("dd-MM-yyyy")+" "+"InactiveUsers.csv"
             $Users = Get-ADUser -Filter {enabled -eq $true}
-            if ([bool]$Credentials) {
+            if (![bool]$Credentials) {
                 $Creds=Get-Credential
             }
             if (!(Test-Path $Path)) {
