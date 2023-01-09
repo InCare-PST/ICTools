@@ -16,8 +16,8 @@ Synopsis Get List of Installed Software JTG
 Begin{
 Import-Module ActiveDirectory
 $date = (get-date).AddDays(-60)
-$getcomputers = Get-ADComputer -Filter * -Properties LastLogonDate,OperatingSystem | where lastlogondate -GE $date
-$computers = ($getcomputers | select -ExpandProperty Name)
+$getcomputers = Get-ADComputer -Filter * -Properties LastLogonDate,OperatingSystem | Where-Object lastlogondate -GE $date
+$computers = ($getcomputers | Select-Object -ExpandProperty Name)
 $FileName = $Date.tostring("dd-MM-yyyy")+" "+"SoftwareList.csv"
 $array = @()
 }
@@ -52,15 +52,15 @@ End{
   if($Export){
   Write-Host -ForegroundColor Green ("Exporting to CSV..." + "$path\$Filename")
   if(!$Showall){
-  $array | Where { $_.DisplayName -and $_.SystemComponent -ne 1 } | select ComputerName, DisplayName, DisplayVersion, Publisher, InstanceId, InstallLocation, SystemComponent | export-csv -path "$path\$filename"
+  $array | Where-Object { $_.DisplayName -and $_.SystemComponent -ne 1 } | Select-Object ComputerName, DisplayName, DisplayVersion, Publisher, InstanceId, InstallLocation, SystemComponent | export-csv -path "$path\$filename"
   }else{
-  $array | Where { $_.DisplayName } | select ComputerName, DisplayName, DisplayVersion, Publisher, InstanceId, InstallLocation, SystemComponent | export-csv -path "$path\$filename"
+  $array | Where-Object { $_.DisplayName } | Select-Object ComputerName, DisplayName, DisplayVersion, Publisher, InstanceId, InstallLocation, SystemComponent | export-csv -path "$path\$filename"
   }
 }
   if($Display){
-    if(!$showall){ $array | Where { $_.DisplayName -and $_.SystemComponent -ne 1 } | select ComputerName, DisplayName, DisplayVersion, Publisher, InstanceId | ft -auto
+    if(!$showall){ $array | Where-Object { $_.DisplayName -and $_.SystemComponent -ne 1 } | Select-Object ComputerName, DisplayName, DisplayVersion, Publisher, InstanceId | Format-Table -auto
   }
-  else{ $array | Where { $_.DisplayName } | select ComputerName, DisplayName, DisplayVersion, Publisher, InstanceId | ft -auto
+  else{ $array | Where-Object { $_.DisplayName } | Select-Object ComputerName, DisplayName, DisplayVersion, Publisher, InstanceId | Format-Table -auto
   }
 }
 }
