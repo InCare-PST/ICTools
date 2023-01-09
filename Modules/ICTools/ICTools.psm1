@@ -159,7 +159,7 @@ Synopsis
                 if($LogOnly -or $RunOnce){
                     $looptime = (Get-Date)
                 }
-                $ScanTime = (Get-Date).ToString('yyyy-MM-dd')
+                #$ScanTime = (Get-Date).ToString('yyyy-MM-dd')
                 if (Test-Path "$LogDir\exclude32.txt") {
                     $exclude32 = Get-Content -Path $LogDir\exclude32.txt
                 }
