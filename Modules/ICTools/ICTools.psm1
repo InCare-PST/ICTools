@@ -21,7 +21,7 @@
 
         [string]$Path="C:\temp",
 
-        [string]$Credentials,
+        [SecureString]$Credentials,
 
         [switch]$Export,
 
