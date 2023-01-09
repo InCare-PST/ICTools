@@ -279,13 +279,13 @@ Function Update-CIModule {
             $psmhash = Get-FileHash -InputStream ($wc.openread($psmurl)) -Algorithm MD5 -ErrorAction Stop
         }
         catch {
-            { Write-Host "Could not access file at $($psmurl)" -ForegroundColor Yellow }
+            Write-Host "Could not access file at $($psmurl)" -ForegroundColor Yellow
         }
         try {
             $psdhash = Get-FileHash -InputStream ($wc.openread($psdurl)) -Algorithm MD5 -ErrorAction Stop
         }
         catch {
-            { Write-Host "Could not access file at $($psdurl)" -ForegroundColor Yellow }
+            Write-Host "Could not access file at $($psdurl)" -ForegroundColor Yellow
         }
         #declare non-dynamic variables
         $ictpath = "$installpath\$PSMName"
