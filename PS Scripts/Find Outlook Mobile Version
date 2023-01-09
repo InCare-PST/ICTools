@@ -8,7 +8,7 @@ foreach ($mailbox in $mailboxes) {
 		$export = $null
 
 #Gather Information
-		$info = Get-MobileDeviceStatistics -Mailbox $mailbox.userprincipalname | Select * -Last 1
+		$info = Get-MobileDeviceStatistics -Mailbox $mailbox.userprincipalname | Select-Object * -Last 1
 			if($info) {
 				$properties = @{
 					Username = $mailbox.userprincipalname

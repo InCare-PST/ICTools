@@ -3,7 +3,7 @@ $restorelist = @()
 $failedlist = @()
 $tpath = "c:\temp"
 
-$Files = (Get-ChildItem -Include *.jse -path d:\ -recurse | Where {$_.LastWriteTime -GE (Get-Date).AddDays(-3)})
+$Files = (Get-ChildItem -Include *.jse -path d:\ -recurse | Where-Object {$_.LastWriteTime -GE (Get-Date).AddDays(-3)})
 
 Foreach ($file in $files){
   $pass1 = $file.FullName
