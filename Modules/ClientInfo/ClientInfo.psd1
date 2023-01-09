@@ -9,7 +9,7 @@
 @{
 
 # Script module or binary module file associated with this manifest.
-# RootModule = ''
+RootModule = 'ClientInfo.psm1'
 
 # Version number of this module.
 ModuleVersion = '0.0.1'
@@ -27,10 +27,10 @@ Author = 'Brandon Bristow'
 CompanyName = 'Thrive Networks'
 
 # Copyright statement for this module
-Copyright = '(c) bbris. All rights reserved.'
+Copyright = '(c) Brandon Bristow. All rights reserved.'
 
 # Description of the functionality provided by this module
-# Description = ''
+Description = 'For updating and comparing onsite user contacts to SNOW records.'
 
 # Minimum version of the PowerShell engine required by this module
 # PowerShellVersion = ''

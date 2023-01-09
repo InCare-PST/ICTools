@@ -21,7 +21,7 @@
 
         [string]$Path="C:\temp",
 
-        [SecureString]$Credentials,
+        [pscredential]$Credentials,
 
         [switch]$Export,
 
@@ -39,7 +39,7 @@
             $Period = ($Date).adddays(-$time)
             $FileName = $Date.tostring("dd-MM-yyyy")+" "+"InactiveUsers.csv"
             $Users = Get-ADUser -Filter {enabled -eq $true}
-            if ([bool]$Credentials) {
+            if (![bool]$Credentials) {
                 $Creds=Get-Credential
             }
             if (!(Test-Path $Path)) {
@@ -54,8 +54,8 @@
                 if ($Export) {
                     Write-Verbose "Exporting to CSV"
                     $Inactive | Export-Csv -Path "$Path\$FileName" -NoTypeInformation
-                    $TotalUsers=Write-Host "Total Enabled Users" $Users.count
-                    $TotalInActive=Write-Host "Total Inactive Users" $Inactive.count
+                    Write-Host "Total Enabled Users" $Users.count
+                    Write-Host "Total Inactive Users" $Inactive.count
                 }
                 Else {
                     $Inactive | Out-Host
@@ -159,7 +159,7 @@ Synopsis
                 if($LogOnly -or $RunOnce){
                     $looptime = (Get-Date)
                 }
-                $ScanTime = (Get-Date).ToString('yyyy-MM-dd')
+                #$ScanTime = (Get-Date).ToString('yyyy-MM-dd')
                 if (Test-Path "$LogDir\exclude32.txt") {
                     $exclude32 = Get-Content -Path $LogDir\exclude32.txt
                 }
