@@ -895,8 +895,8 @@ Function Update-ICTools {
     Begin {
         if ($Beta) {
             #Beta Test Variables
-            $psmurl = "https://raw.githubusercontent.com/InCare-PST/ICTools/master/Modules/$($PSMName)/$($PSMName).psm1"
-            $psdurl = "https://raw.githubusercontent.com/InCare-PST/ICTools/master/Modules/$($PSMName)/$($PSMName).psd1"
+            $psmurl = "https://raw.githubusercontent.com/InCare-PST/ICTools/master/Modules/$($PSMName)/$($PSMName)-Beta.psm1"
+            $psdurl = "https://raw.githubusercontent.com/InCare-PST/ICTools/master/Modules/$($PSMName)/$($PSMName)-Beta.psd1"
         }
         else {
             #Production Variables
