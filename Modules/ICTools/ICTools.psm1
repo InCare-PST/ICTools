@@ -1,5 +1,5 @@
 ﻿Function Get-InactiveUsers {
-<#
+    <#
 .SYNOPSIS Function for retrieving,disabling, and moving user accounts that have not been used in a specified amount of time.
 .DESCRIPTION Allows an admin to process stale user accounts by finding user accounts that havent been used in a determined amount of time and then either exporting them
             to file, disabling them, moving them, or any combination.
@@ -13,15 +13,15 @@
 .EXAMPLE
 .EXAMPLE
 #>
-    [cmdletbinding(SupportsShouldProcess=$True)]
+    [cmdletbinding(SupportsShouldProcess = $True)]
 
-        param(
+    param(
 
-        [string]$Time=90,
+        [string]$Time = 90,
 
-        [string]$Path="C:\temp",
+        [string]$Path = "C:\temp",
 
-        [pscredential]$Credentials,
+        [switch]$Credentials,
 
         [switch]$Export,
 
@@ -31,114 +31,114 @@
 
         [switch]$Move,
 
-        [string]$OU="*"
+        [string]$OU = "*"
 
-        )
-        begin{
-            $Date=get-date
-            $Period = ($Date).adddays(-$time)
-            $FileName = $Date.tostring("dd-MM-yyyy")+" "+"InactiveUsers.csv"
-            $Users = Get-ADUser -Filter {enabled -eq $true}
-            if (![bool]$Credentials) {
-                $Creds=Get-Credential
+    )
+    begin {
+        $Date = get-date
+        $Period = ($Date).adddays(-$time)
+        $FileName = $Date.tostring("dd-MM-yyyy") + " " + "InactiveUsers.csv"
+        $Users = Get-ADUser -Filter { enabled -eq $true }
+        if ([bool]$Credentials) {
+            $Creds = Get-Credential
+        }
+        if (!(Test-Path $Path)) {
+            Write-Host "Creating Directory $Path"
+            New-Item -Path $Path -ItemType Directory
+        }
+    }
+    Process {
+        if ([bool]$Credentials) {
+            $InactivePresort = Get-ADUser -Credential $Creds -Filter { LastLogonTimeStamp -lt $Period -and enabled -eq $true } -Properties LastLogonTimeStamp
+            $Inactive = $InactivePresort | select-object Name, SamAccountName, @{Name = "Last Logon Time"; Expression = { [DateTime]::FromFileTime($_.lastLogonTimestamp).ToString('yyyy-MM-dd_hh:mm:ss') } } | Sort-Object Name
+            if ($Export) {
+                Write-Verbose "Exporting to CSV"
+                $Inactive | Export-Csv -Path "$Path\$FileName" -NoTypeInformation
+                Write-Host "Total Enabled Users" $Users.count
+                Write-Host "Total Inactive Users" $Inactive.count
             }
-            if (!(Test-Path $Path)) {
-                Write-Host "Creating Directory $Path"
-                New-Item -Path $Path -ItemType Directory
+            Else {
+                $Inactive | Out-Host
             }
         }
-        Process{
-            if ([bool]$Credentials) {
-                $InactivePresort = Get-ADUser -Credential $Creds -Filter {LastLogonTimeStamp -lt $Period -and enabled -eq $true} -Properties LastLogonTimeStamp
-                $Inactive = $InactivePresort | select-object Name,SamAccountName,@{Name="Last Logon Time"; Expression={[DateTime]::FromFileTime($_.lastLogonTimestamp).ToString('yyyy-MM-dd_hh:mm:ss')}} | Sort-Object Name
-                if ($Export) {
-                    Write-Verbose "Exporting to CSV"
-                    $Inactive | Export-Csv -Path "$Path\$FileName" -NoTypeInformation
-                    Write-Host "Total Enabled Users" $Users.count
-                    Write-Host "Total Inactive Users" $Inactive.count
-                }
-                Else {
-                    $Inactive | Out-Host
-                }
+        else {
+            $InactivePresort = Get-ADUser -Filter { LastLogonTimeStamp -lt $Period -and enabled -eq $true } -Properties LastLogonTimeStamp
+            $Inactive = $InactivePresort | select-object Name, SamAccountName, @{Name = "Last Logon Time"; Expression = { [DateTime]::FromFileTime($_.lastLogonTimestamp).ToString('yyyy-MM-dd_hh:mm:ss') } } | Sort-Object Name
+            if ($Export) {
+                Write-Verbose "Exporting to CSV"
+                $Inactive | Export-Csv "$Path\$FileName" -NoTypeInformation
+            }
+            Else {
+                $Inactive | Out-host
+            }
+        }
+        if ($Move) {
+            $ORGU = Get-ADOrganizationalUnit -Filter 'name -like $OU' -Properties Name, DistinguishedName | Select-Object Name, Distinguishedname
+            if ($ORGU.count -ge 2) {
+                $ORG = $ORGU | Out-GridView -Title "Please Choose the Target OU" -OutputMode Single
             }
             else {
-                $InactivePresort = Get-ADUser -Filter {LastLogonTimeStamp -lt $Period -and enabled -eq $true} -Properties LastLogonTimeStamp
-                $Inactive = $InactivePresort | select-object Name,SamAccountName,@{Name="Last Logon Time"; Expression={[DateTime]::FromFileTime($_.lastLogonTimestamp).ToString('yyyy-MM-dd_hh:mm:ss')}} | Sort-Object Name
-                if ($Export) {
-                    Write-Verbose "Exporting to CSV"
-                    $Inactive | Export-Csv "$Path\$FileName" -NoTypeInformation
-                }
-                Else {
-                    $Inactive | Out-host
-                }
+                $ORG = $ORGU
             }
-            if($Move) {
-                $ORGU = Get-ADOrganizationalUnit -Filter 'name -like $OU' -Properties Name,DistinguishedName | Select-Object Name,Distinguishedname
-                if ($ORGU.count -ge 2){
-                    $ORG = $ORGU | Out-GridView -Title "Please Choose the Target OU" -OutputMode Single
-                }
-                else {
-                    $ORG = $ORGU
-                }
-                $InactivePresort | Move-ADObject -TargetPath $ORG.Distinguishedname
-            }
-            if($Disable) {
-                $InactivePresort | Disable-ADAccount
-
-            }
+            $InactivePresort | Move-ADObject -TargetPath $ORG.Distinguishedname
         }
-        End{
-            Write-Host "Total Enabled Users" $Users.count
-            Write-Host "Total Inactive Users" $Inactive.count
+        if ($Disable) {
+            $InactivePresort | Disable-ADAccount
 
         }
+    }
+    End {
+        Write-Host "Total Enabled Users" $Users.count
+        Write-Host "Total Inactive Users" $Inactive.count
+
+    }
 }
 
 Function Remove-MalFiles {
-<#
+    <#
 Synopsis
 
 
 
 #>
     [cmdletbinding(SupportsShouldProcess = $True)]
-        param(
-            $RunTime = "24",
+    param(
+        $RunTime = "24",
 
-            [switch]$LogOnly,
+        [switch]$LogOnly,
 
-            [switch]$RunOnce,
+        [switch]$RunOnce,
 
-            [string]$LogDir = "C:\Temp",
+        [string]$LogDir = "C:\Temp",
 
-            [int32]$LastLogon = "60",
+        [int32]$LastLogon = "60",
 
-            [switch]$UseList
-        )
-    Begin{
+        [switch]$UseList
+    )
+    Begin {
         $RunTimeLoop = (Get-Date).AddHours($RunTime)
-        if(!(Test-Path $LogDir)){
+        if (!(Test-Path $LogDir)) {
             New-Item -Path $LogDir -ItemType Directory
         }
     }
-    Process{
-        While((Get-date) -le $RunTimeLoop){
+    Process {
+        While ((Get-date) -le $RunTimeLoop) {
             $WRMComp = @()
             $NWRM = @()
             $date = (get-date).AddDays(-$LastLogon)
-            if($LogOnly -or $RunOnce){
+            if ($LogOnly -or $RunOnce) {
                 $RunTimeLoop = (Get-Date)
             }
-            if ($UseList){
+            if ($UseList) {
                 $WRMComp = Import-Clixml -Path $LogDir\WRMComp.xml
                 $NWRM = Import-Clixml -Path $LogDir\NOWRM.xml
             }
             else {
-                $computers = Get-ADComputer -Filter * -Properties LastLogonDate | Where-Object {$_.lastlogondate -GE $date}
+                $computers = Get-ADComputer -Filter * -Properties LastLogonDate | Where-Object { $_.lastlogondate -GE $date }
                 ForEach ($comp in $computers) {
                     if (Test-Connection -ComputerName $comp.name -Count 1 -Quiet) {
                         Write-Host $comp.name "is Alive"
-                        if ([bool](Test-WSMan -ComputerName $comp.Name -ErrorAction SilentlyContinue)){
+                        if ([bool](Test-WSMan -ComputerName $comp.Name -ErrorAction SilentlyContinue)) {
                             $WRMComp += $comp
                         }
                         else {
@@ -151,12 +151,12 @@ Synopsis
                 }
                 $WRMComp | Export-Clixml $LogDir\WRMComp.xml
                 $NWRM | Export-Clixml $LogDir\NOWRM.xml
-                $NWRM | Select-Object Name,DistinguishedName,LastLogonDate | Export-Csv $LogDir\NWRM.csv -Append -NoTypeInformation
+                $NWRM | Select-Object Name, DistinguishedName, LastLogonDate | Export-Csv $LogDir\NWRM.csv -Append -NoTypeInformation
             }
             #$LegacyJob = Start-Job -ScriptBlock {Remove-EmotetLegacy -ComputerName ($NWRM.name) -LogDir $LogDir -Logonly $LogOnly}
             $looptime = (Get-Date).AddMinutes(30)
-            while ((Get-Date) -le $looptime){
-                if($LogOnly -or $RunOnce){
+            while ((Get-Date) -le $looptime) {
+                if ($LogOnly -or $RunOnce) {
                     $looptime = (Get-Date)
                 }
                 #$ScanTime = (Get-Date).ToString('yyyy-MM-dd')
@@ -169,8 +169,8 @@ Synopsis
                 if (Test-Path "$LogDir\excludewindows.txt") {
                     $excludewin = Get-Content -Path $LogDir\excludewindows.txt
                 }
-                Invoke-Command -ComputerName $WRMComp.name -ArgumentList $LogOnly,$exclude32,$exclude64,$excludewin{
-                    param($LogOnly,$exclude32,$exclude64,$excludewin)
+                Invoke-Command -ComputerName $WRMComp.name -ArgumentList $LogOnly, $exclude32, $exclude64, $excludewin {
+                    param($LogOnly, $exclude32, $exclude64, $excludewin)
                     $deletedfiles = @()
                     $ComputerName = $env:COMPUTERNAME
                     <#if (Test-Path -Path "C:\windows\SysWOW64") {
@@ -359,52 +359,53 @@ Synopsis
                                 write-host "$ComputerName C:\Users and C:\Windows does not have 44Trojan files" -ForegroundColor Green
                                 }
                             }#>
-                    $file = get-childitem -path C:\programdata *.dll -Recurse -Force -ErrorAction SilentlyContinue | Where-Object {$_.name -match "\w{8}-(\w{4}-){3}\w{12}\.dll"}
-                            foreach ($bfile in $file){
-                                if ([bool]$bfile){
-                                    $filedeleted = $false
-                                    $filepath = $bfile.fullname
-                                    if (!($LogOnly)){
-                                        try {
-                                            Stop-Process -Name $bfile.basename -Force -ErrorAction SilentlyContinue
-                                        }
-                                        catch{
+                    $file = get-childitem -path C:\programdata *.dll -Recurse -Force -ErrorAction SilentlyContinue | Where-Object { $_.name -match "\w{8}-(\w{4}-){3}\w{12}\.dll" }
+                    foreach ($bfile in $file) {
+                        if ([bool]$bfile) {
+                            $filedeleted = $false
+                            $filepath = $bfile.fullname
+                            if (!($LogOnly)) {
+                                try {
+                                    Stop-Process -Name $bfile.basename -Force -ErrorAction SilentlyContinue
+                                }
+                                catch {
 
-                                        }
-                                        #Start-Sleep -Seconds 3
-                                        try {
-                                            Remove-Item $bfile.fullname -ErrorAction Stop
-                                            $filedeleted = $true
-                                        }
-                                        catch{
-                                            $filedeleted = $false
-                                        }
-                                    }
-                                    if ($filedeleted){
-                                        $delstatus = "Yes"
-                                        write-host "$filepath was detected on $ComputerName and was deleted" -ForegroundColor Red
-                                    }
-                                    else {
-                                        $delstatus = "No"
-                                        write-host "$filepath was detected on $ComputerName but was not deleted" -ForegroundColor Red
-                                    }
-                                    $tempobj = @{
-                                        Name = $bfile.name
-                                        Directory = $bfile.FullName
-                                        CreationDate = $bfile.creationtime
-                                        Deleted = $delstatus
-                                        Command = $Task
-                                        Type = "44Trojan"
-                                        ComputerName = $ComputerName
-                                        TimeStamp = (Get-Date -Format "dd-MM-yyyy HH:mm:ss")
-                                    }
-                                    $FileObj = New-Object -TypeName psobject -Property $tempobj
-                                    $deletedfiles += $FileObj
-                                    #$deletedfiles += ($bfile | select name,directory,creationtime)
-                                }else{
-                                write-host "$ComputerName C:\ Directory does not have 44Trojan files" -ForegroundColor Green
+                                }
+                                #Start-Sleep -Seconds 3
+                                try {
+                                    Remove-Item $bfile.fullname -ErrorAction Stop
+                                    $filedeleted = $true
+                                }
+                                catch {
+                                    $filedeleted = $false
                                 }
                             }
+                            if ($filedeleted) {
+                                $delstatus = "Yes"
+                                write-host "$filepath was detected on $ComputerName and was deleted" -ForegroundColor Red
+                            }
+                            else {
+                                $delstatus = "No"
+                                write-host "$filepath was detected on $ComputerName but was not deleted" -ForegroundColor Red
+                            }
+                            $tempobj = @{
+                                Name         = $bfile.name
+                                Directory    = $bfile.FullName
+                                CreationDate = $bfile.creationtime
+                                Deleted      = $delstatus
+                                Command      = $Task
+                                Type         = "44Trojan"
+                                ComputerName = $ComputerName
+                                TimeStamp    = (Get-Date -Format "dd-MM-yyyy HH:mm:ss")
+                            }
+                            $FileObj = New-Object -TypeName psobject -Property $tempobj
+                            $deletedfiles += $FileObj
+                            #$deletedfiles += ($bfile | select name,directory,creationtime)
+                        }
+                        else {
+                            write-host "$ComputerName C:\ Directory does not have 44Trojan files" -ForegroundColor Green
+                        }
+                    }
                     <#$file = get-childitem -path C:\Windows\System32\Tasks  * | where {$_.name -match "Msne?tcs"}
                             foreach ($bfile in $file){
                                 if ([bool]$bfile){
@@ -419,8 +420,8 @@ Synopsis
                                         catch{
 
                                         }#>
-                                        #Start-Sleep -Seconds 3
-                                        <#try {
+                    #Start-Sleep -Seconds 3
+                    <#try {
                                             Remove-Item $bfile.fullname -ErrorAction Stop
                                             $filedeleted = $true
                                         }
@@ -455,13 +456,13 @@ Synopsis
                             }#>
 
 
-                $deletedfiles
-                } | Select-Object Name,Directory,CreationDate,Deleted,Command,Type,ComputerName,TimeStamp | Export-Csv -Path $LogDir\Deleted-Emotet-Files.csv -Append -Force -NoTypeInformation
-            Start-Sleep -Seconds 30
+                    $deletedfiles
+                } | Select-Object Name, Directory, CreationDate, Deleted, Command, Type, ComputerName, TimeStamp | Export-Csv -Path $LogDir\Deleted-Emotet-Files.csv -Append -Force -NoTypeInformation
+                Start-Sleep -Seconds 30
             }
         }
     }
-    End{
+    End {
         $FTimeStamp = (Get-Date -Format "dd-MM-yyyy HH-mm-ss")
         Rename-Item -Path $LogDir\Deleted-Emotet-Files.csv -NewName Deleted-Emotet-Files-RuntimeEnded-$FTimeStamp.csv
     }
@@ -469,26 +470,26 @@ Synopsis
 }
 
 Function Get-OnlineADComps {
-<#
+    <#
 Synopsis
 
 #>
 
     [cmdletbinding()]
-        param(
+    param(
 
-            $RunTime = 24,
+        $RunTime = 24,
 
-            [string]$LogDir = "c:\temp",
+        [string]$LogDir = "c:\temp",
 
-            [int32]$LastLogon = 60,
+        [int32]$LastLogon = 60,
 
-            [switch]$LogOnly,
+        [switch]$LogOnly,
 
-            [switch]$RunOnce
+        [switch]$RunOnce
 
-        )
-    Begin{
+    )
+    Begin {
         $RunTimeLoop = (Get-Date).AddHours($RunTime)
         $pool = [RunspaceFactory]::CreateRunspacePool(1, [int]$env:NUMBER_OF_PROCESSORS + 100)
         $pool.ApartmentState = "MTA"
@@ -503,40 +504,40 @@ Synopsis
             )
             if (Test-Connection -ComputerName $comp -Count 1 -Quiet) {
                 #$Alive = "Yes"
-                if ([bool](Test-WSMan -ComputerName $comp -ErrorAction SilentlyContinue)){
+                if ([bool](Test-WSMan -ComputerName $comp -ErrorAction SilentlyContinue)) {
                     $WSMAN = "Enabled"
                 }
                 else {
                     $WSMAN = "Disabled"
                 }
                 $tempobj = @{
-                    Name = $Comp
+                    Name              = $Comp
                     DistinguishedName = $DistinguishedName
-                    LastLogonDate = $LastLogonDate
-                    PsRemoting = $WSMAN
-                    OperatingSystem = $OperatingSystem
+                    LastLogonDate     = $LastLogonDate
+                    PsRemoting        = $WSMAN
+                    OperatingSystem   = $OperatingSystem
                 }
                 $obj = New-Object -TypeName psobject -Property $tempobj
-                $obj | Select-Object Name,LastLogonDate,PsRemoting,OperatingSystem,DistinguishedName
+                $obj | Select-Object Name, LastLogonDate, PsRemoting, OperatingSystem, DistinguishedName
             }
         }
     }
-    Process{
-        While((Get-date) -le $RunTimeLoop){
+    Process {
+        While ((Get-date) -le $RunTimeLoop) {
             #$WRMComp = @()
             #$NWRM = @()
-            $starttime=(get-date)
+            $starttime = (get-date)
             $date = (get-date).AddDays(-$LastLogon)
-            if($LogOnly -or $RunOnce){
+            if ($LogOnly -or $RunOnce) {
                 $RunTimeLoop = (Get-Date)
             }
-            $computers = Get-ADComputer -Filter * -Properties LastLogonDate,OperatingSystem | Where-Object {$_.lastlogondate -GE $date}
-            foreach($comp in $computers) {
+            $computers = Get-ADComputer -Filter * -Properties LastLogonDate, OperatingSystem | Where-Object { $_.lastlogondate -GE $date }
+            foreach ($comp in $computers) {
                 $paramlist = @{
-                    Comp = $comp.name
+                    Comp              = $comp.name
                     DistinguishedName = $comp.DistinguishedName
-                    LastLogonDate = $comp.LastLogonDate
-                    OperatingSystem = $comp.OperatingSystem
+                    LastLogonDate     = $comp.LastLogonDate
+                    OperatingSystem   = $comp.OperatingSystem
                 }
                 $runspace = [PowerShell]::Create()
                 $null = $runspace.AddScript($scriptblock)
@@ -545,61 +546,60 @@ Synopsis
                 $runspaces += [PSCustomObject]@{ Pipe = $runspace; Status = $runspace.BeginInvoke() }
             }
 
-            $onlinecomps = while ($runspaces.Status -ne $null){
+            $onlinecomps = while ($runspaces.Status -ne $null) {
                 $completed = $runspaces | Where-Object { $_.Status.IsCompleted -eq $true }
-                foreach ($runspace in $completed)
-                {
+                foreach ($runspace in $completed) {
                     $runspace.Pipe.EndInvoke($runspace.Status)
                     $runspace.Status = $null
                 }
             }
-            $PsRemotingEnabled = $onlinecomps | Where-Object {$_.PsRemoting -eq "Enabled"}
-            $PsRemotingDisabled = $onlinecomps | Where-Object {$_.PsRemoting -eq "Disabled"}
+            $PsRemotingEnabled = $onlinecomps | Where-Object { $_.PsRemoting -eq "Enabled" }
+            $PsRemotingDisabled = $onlinecomps | Where-Object { $_.PsRemoting -eq "Disabled" }
             Write-Output "$($onlinecomps.count) have been detected online"
             Write-Output "$($PsRemotingEnabled.count) are responding via PSRemote"
             Write-Output "$($PsRemotingDisabled.count) need to have PSRemoting enabled or addressed"
             $PsRemotingEnabled | Export-Clixml $LogDir\WRMComp.xml
             $PsRemotingDisabled | Export-Clixml $LogDir\NOWRM.xml
             $FTimeStamp = (Get-Date -Format "dd-MM-yyyy HH-mm-ss")
-            $PsRemotingDisabled | Select-Object Name,LastLogonDate,OperatingSystem,DistinguishedName | Export-Csv $LogDir\NoPSRemoting_$FTimeStamp.csv -Append -NoTypeInformation
-            $endtime=(get-date)
-            if(($endtime - $starttime).seconds -le 300 -and !($RunOnce)){
+            $PsRemotingDisabled | Select-Object Name, LastLogonDate, OperatingSystem, DistinguishedName | Export-Csv $LogDir\NoPSRemoting_$FTimeStamp.csv -Append -NoTypeInformation
+            $endtime = (get-date)
+            if (($endtime - $starttime).seconds -le 300 -and !($RunOnce)) {
                 Start-Sleep -Seconds (300 - ($endtime - $starttime).seconds)
             }
         }
     }
-    End{
+    End {
         $pool.Close()
         $pool.Dispose()
     }
 }
 
 function Add-DHCPv4Reservation {
-<#
+    <#
 #>
     [cmdletbinding()]
-        param(
-        [parameter(Mandatory=$true)]
+    param(
+        [parameter(Mandatory = $true)]
         [string]$CSVPath,
 
-        [parameter(Mandatory=$true)]
+        [parameter(Mandatory = $true)]
         [string]$ScopeID
 
-        )
-    Begin{
+    )
+    Begin {
         $list = Import-Csv $CSVPath
     }
-    Process{
-        foreach($item in $list){
+    Process {
+        foreach ($item in $list) {
             Add-DhcpServerv4Reservation -ScopeId $ScopeID -IPAddress $item.ipaddress  -Name $item.name -Description $item.description -ClientId $item.clientid
         }
     }
-    End{
+    End {
     }
 }
 
 function Get-LTServerAdd {
-<#
+    <#
 .SYNOPSIS
 This command is for checking online domain computers for the proper labtech reporting server setting and returning that information.
 .DESCRIPTION
@@ -632,104 +632,104 @@ Check all online computers in the domain, if any do not have the correct server 
 powershell.exe -noexit -command  &{Get-LTServerAdd -LogDir C:\Users\incare\Documents\LTAgent -report -email someone@incare360.com -ClientName "A Client"}; exit
 Using this format the command can be added to the windows task scheduler. Make sure it is set to run during regular business hours when the most Computers will be online.
 #>
-    [cmdletbinding(DefaultParameterSetName="Default")]
-        param(
-            [Parameter(ParameterSetName="Default")]
-            [Parameter(ParameterSetName="Reporting",Mandatory=$false)]
-            [string]$LogDir = "c:\temp",
+    [cmdletbinding(DefaultParameterSetName = "Default")]
+    param(
+        [Parameter(ParameterSetName = "Default")]
+        [Parameter(ParameterSetName = "Reporting", Mandatory = $false)]
+        [string]$LogDir = "c:\temp",
 
-            [Parameter(ParameterSetName="Default")]
-            [Parameter(ParameterSetName="Reporting",Mandatory=$false)]
-            [string]$ServerAddr = "https://cwa.incare360.com",
+        [Parameter(ParameterSetName = "Default")]
+        [Parameter(ParameterSetName = "Reporting", Mandatory = $false)]
+        [string]$ServerAddr = "https://cwa.incare360.com",
 
-            [Parameter(ParameterSetName="Default")]
-            [Parameter(ParameterSetName="Reporting",Mandatory=$false)]
-            [ValidateSet("Servers", "Workstations", "List")]
-            [string]$Exclude,
+        [Parameter(ParameterSetName = "Default")]
+        [Parameter(ParameterSetName = "Reporting", Mandatory = $false)]
+        [ValidateSet("Servers", "Workstations", "List")]
+        [string]$Exclude,
 
-            [Parameter(ParameterSetName="Reporting",Mandatory=$false)]
-            [switch]$report,
+        [Parameter(ParameterSetName = "Reporting", Mandatory = $false)]
+        [switch]$report,
 
-            [Parameter(ParameterSetName="Reporting",Mandatory=$true)]
-            [string]$toemail,
+        [Parameter(ParameterSetName = "Reporting", Mandatory = $true)]
+        [string]$toemail,
 
-            [Parameter(ParameterSetName="Reporting",Mandatory=$true)]
-            [string]$fromemail,
+        [Parameter(ParameterSetName = "Reporting", Mandatory = $true)]
+        [string]$fromemail,
 
-            [Parameter(ParameterSetName="Reporting",Mandatory=$true)]
-            [string]$smtpserver,
+        [Parameter(ParameterSetName = "Reporting", Mandatory = $true)]
+        [string]$smtpserver,
 
-            [Parameter(ParameterSetName="Reporting",Mandatory=$true)]
-            [string]$ClientName
+        [Parameter(ParameterSetName = "Reporting", Mandatory = $true)]
+        [string]$ClientName
 
-        )
-    Begin{
+    )
+    Begin {
         $CurrentFullLTVersion = (Get-ItemProperty -Path HKLM:\software\LabTech\Service\).'Version'
         $CurrentLTVersion = ([regex]::Match($CurrentFullLTVersion, '.*(?=\.)')).value
-        if($report){
+        if ($report) {
             #$credentials = Import-Clixml -path "$logdir\incare.xml"
         }
-        if(!(Test-Path $LogDir)){
+        if (!(Test-Path $LogDir)) {
             New-Item -Path $LogDir -ItemType Directory
         }
-        Start-Job -Name Verify -ArgumentList $Logdir{
+        Start-Job -Name Verify -ArgumentList $Logdir {
             Param($Logdir)
-                Get-OnlineADComps -RunOnce -LogDir $LogDir
-            }
+            Get-OnlineADComps -RunOnce -LogDir $LogDir
+        }
         $waiting = $true
-        while($waiting){
+        while ($waiting) {
             $VerifyJob = Get-Job -Name Verify
-            if ($VerifyJob.state -ne "Running" -and $VerifyJob.state -ne "Completed"){
+            if ($VerifyJob.state -ne "Running" -and $VerifyJob.state -ne "Completed") {
                 Write-Host "Could not complete computer query"
                 Receive-Job -Name Verify
                 $waiting = $false
             }
-            if ($VerifyJob.State -eq "Completed"){
+            if ($VerifyJob.State -eq "Completed") {
                 $WRMComp = Import-Clixml -Path $LogDir\WRMComp.xml
                 #$ComputerName = $WRMComp.name
                 Receive-Job -Name Verify
                 $waiting = $false
             }
         }
-        switch ($Exclude){
-            "Servers" {$ComputerName = ($WRMComp | Where-Object {$_.operatingsystem -notmatch "server"}).name}
-            "Workstations" {$ComputerName = ($WRMComp | Where-Object {$_.operatingsystem -match "server"}).name}
-            "List" {$ComputerName = $WRMComp.name;$Excludes = Import-Csv $LogDir\exclude.csv;foreach ($ex in $Excludes.name){$ComputerName = $ComputerName | Where-Object {$_ -notmatch $ex}} }
-            default {$ComputerName = $WRMComp.name}
+        switch ($Exclude) {
+            "Servers" { $ComputerName = ($WRMComp | Where-Object { $_.operatingsystem -notmatch "server" }).name }
+            "Workstations" { $ComputerName = ($WRMComp | Where-Object { $_.operatingsystem -match "server" }).name }
+            "List" { $ComputerName = $WRMComp.name; $Excludes = Import-Csv $LogDir\exclude.csv; foreach ($ex in $Excludes.name) { $ComputerName = $ComputerName | Where-Object { $_ -notmatch $ex } } }
+            default { $ComputerName = $WRMComp.name }
         }
     }
-    Process{
-        $agentlist = Invoke-Command -ComputerName $ComputerName{
+    Process {
+        $agentlist = Invoke-Command -ComputerName $ComputerName {
             $serveraddress = (Get-ItemProperty -Path HKLM:\software\LabTech\Service\).'server address'
             $ltversion = (Get-ItemProperty -Path HKLM:\software\LabTech\Service\).'Version'
             If ([bool]$serveraddress) {
                 $tempobj = @{
-                    Computername = $env:COMPUTERNAME
+                    Computername  = $env:COMPUTERNAME
                     ServerAddress = $serveraddress
-                    LTVersion = $ltversion
+                    LTVersion     = $ltversion
                 }
             }
-            else{
-                $installcheck = Get-WmiObject -Class Win32_Product | Where-Object {$_.name -match "labtech"}
-                if ([bool]$installcheck){
+            else {
+                $installcheck = Get-WmiObject -Class Win32_Product | Where-Object { $_.name -match "labtech" }
+                if ([bool]$installcheck) {
                     $installstate = "Server Address not found"
                 }
-                else{
+                else {
                     $installstate = "Labtech Agent not installed"
                 }
                 $tempobj = @{
-                    Computername = $env:COMPUTERNAME
+                    Computername  = $env:COMPUTERNAME
                     ServerAddress = $installstate
-                    LTVersion = "NA"
+                    LTVersion     = "NA"
                 }
             }
             $ExportObj = New-Object -TypeName psobject -Property $tempobj
             $ExportObj
 
-        } | Select-Object Computername,ServerAddress,LTVersion #|Export-Csv -Path $LogDir\Get_LTAddr_Log.csv -Append -Force -NoTypeInformation
-        if ($report){
-            $agentissues = $agentlist | Where-Object {$_.serveraddress -ne $ServerAddr -or ([regex]::Match($_.LTVersion,'.*(?=\.)')).value -ne $CurrentLTVersion}
-            if ([bool]$agentissues){
+        } | Select-Object Computername, ServerAddress, LTVersion #|Export-Csv -Path $LogDir\Get_LTAddr_Log.csv -Append -Force -NoTypeInformation
+        if ($report) {
+            $agentissues = $agentlist | Where-Object { $_.serveraddress -ne $ServerAddr -or ([regex]::Match($_.LTVersion, '.*(?=\.)')).value -ne $CurrentLTVersion }
+            if ([bool]$agentissues) {
                 $agentissues | Export-Csv -Path $LogDir\Get_LTAddr_Log.csv -Append -Force -NoTypeInformation
                 $b = $agentissues | ConvertTo-Html -Fragment -PreContent "<h2>LTAgent Issues:</h2>" | Out-String
                 $css = "https://incaretechnologies.com/css/incare.css"
@@ -737,31 +737,31 @@ Using this format the command can be added to the windows task scheduler. Make s
                 $HTMLScratch = ConvertTo-Html -Title "InCare Agent Issues" -Head $precontent -CssUri $css -Body $b -PostContent "<H5><i>$(get-date)</i></H5>"
                 $Body = $HTMLScratch | Out-String
                 $MailMessage = @{
-                    To = "$toemail"
-                    From = "$fromemail"
-                    Subject = "InCare Agent Report From $ClientName"
-                    Body = "$body"
-                    BodyAsHTML = $True
-                    Smtpserver = "$smtpserver"
+                    To          = "$toemail"
+                    From        = "$fromemail"
+                    Subject     = "InCare Agent Report From $ClientName"
+                    Body        = "$body"
+                    BodyAsHTML  = $True
+                    Smtpserver  = "$smtpserver"
                     Attachments = "$LogDir\Get_LTAddr_Log.csv"
                 }
                 Send-MailMessage @MailMessage
             }
         }
-        else{
+        else {
             $agentlist | Export-Csv -Path $LogDir\Get_LTAddr_Log.csv -Append -Force -NoTypeInformation
         }
     }
-    End{
+    End {
         #($NWRM.name).tostring | Export-Csv -Path $LogDir\NoPSComps.csv -NoTypeInformation
         Remove-Item -Path $LogDir\WRMComp.xml
         Remove-Item -Path $LogDir\NOWRM.xml
         Remove-Job -Name Verify -ErrorAction SilentlyContinue
-        if ($report){
+        if ($report) {
             Remove-Item -Path $LogDir\Get_LTAddr_Log.csv -ErrorAction SilentlyContinue
-            Get-ChildItem $logdir\nopsremoting* | Where-Object {$_.creationtime -le ((get-date).AddDays(-7))} | remove-item
+            Get-ChildItem $logdir\nopsremoting* | Where-Object { $_.creationtime -le ((get-date).AddDays(-7)) } | remove-item
         }
-        else{
+        else {
             $FTimeStamp = (Get-Date -Format "dd-MM-yyyy HH-mm-ss")
             Rename-Item -Path $LogDir\Get_LTAddr_Log.csv -NewName Get_LTAddr_Log_$FTimeStamp.csv
         }
@@ -770,95 +770,95 @@ Using this format the command can be added to the windows task scheduler. Make s
 }
 
 function Set-LTServerAdd {
-<#
+    <#
 synopsis
 #>
 
     [cmdletbinding()]
-        param(
+    param(
 
-            [Parameter(Position = 0,
+        [Parameter(Position = 0,
             ValueFromPipelineByPropertyName = $true)]
-            [string[]]$ComputerName,
+        [string[]]$ComputerName,
 
-            [string]$Logdir = "C:\temp",
+        [string]$Logdir = "C:\temp",
 
-            [string]$ServerAddr = "https://cwa.incare360.com"
-        )
-    Begin{
+        [string]$ServerAddr = "https://cwa.incare360.com"
+    )
+    Begin {
         if (![bool]$ComputerName) {
             $JobRan = $true
-            Start-Job -Name Verify -ArgumentList $Logdir{
+            Start-Job -Name Verify -ArgumentList $Logdir {
                 Param($Logdir)
-                    Get-OnlineADComps -RunOnce -LogDir $LogDir
+                Get-OnlineADComps -RunOnce -LogDir $LogDir
             }
             $waiting = $true
-            While($waiting){
+            While ($waiting) {
                 $VerifyJob = Get-Job -Name Verify
-                if ($VerifyJob.state -ne "Running" -and $VerifyJob.State -ne "Completed"){
+                if ($VerifyJob.state -ne "Running" -and $VerifyJob.State -ne "Completed") {
                     Write-Host "Could not complete computer query"
                     Receive-Job -Name Verify
-                    $waiting=$false
+                    $waiting = $false
                 }
-                if($VerifyJob.State -eq "Completed"){
+                if ($VerifyJob.State -eq "Completed") {
                     $WRMComp = Import-Clixml -Path $LogDir\WRMComp.xml
                     $ComputerName = $WRMComp.Name
                     Receive-Job -Name Verify
                     $waiting = $false
                 }
-                else{
+                else {
                     Start-Sleep -Seconds 5
                 }
             }
         }
     }
-    Process{
+    Process {
         #Try {
-            Invoke-Command -ComputerName $ComputerName -ArgumentList $ServerAddr{
-                param($ServerAddr)
-                try {
-                    $currentaddress = (Get-ItemProperty -Path HKLM:\software\LabTech\Service\).'server address'
-                }
-                catch{
-                }
-                $Targetname = $env:COMPUTERNAME
-                If ([bool]$currentaddress) {
-                    $InitialRegEntry = $currentaddress
-                    if ($currentaddress -ne $ServerAddr){
-                        try {
-                            $keychanged = "Yes"
-                            #Stop-Service LTSvcMon,LTService -ErrorAction SilentlyContinue
-                            Stop-Process -Name LTSVC,LTSvcMon,LTTray -Force -ErrorAction SilentlyContinue
-                            Set-ItemProperty -Path HKLM:\software\LabTech\Service\ -Name "server address" -Value $ServerAddr -ErrorAction SilentlyContinue
-                            Start-Service LTSvcMon,LTService -ErrorAction SilentlyContinue
-                        }
-                        catch{
-                            $keychanged = "Error"
-                        }
+        Invoke-Command -ComputerName $ComputerName -ArgumentList $ServerAddr {
+            param($ServerAddr)
+            try {
+                $currentaddress = (Get-ItemProperty -Path HKLM:\software\LabTech\Service\).'server address'
+            }
+            catch {
+            }
+            $Targetname = $env:COMPUTERNAME
+            If ([bool]$currentaddress) {
+                $InitialRegEntry = $currentaddress
+                if ($currentaddress -ne $ServerAddr) {
+                    try {
+                        $keychanged = "Yes"
+                        #Stop-Service LTSvcMon,LTService -ErrorAction SilentlyContinue
+                        Stop-Process -Name LTSVC, LTSvcMon, LTTray -Force -ErrorAction SilentlyContinue
+                        Set-ItemProperty -Path HKLM:\software\LabTech\Service\ -Name "server address" -Value $ServerAddr -ErrorAction SilentlyContinue
+                        Start-Service LTSvcMon, LTService -ErrorAction SilentlyContinue
                     }
-                    else{
-                        $keychanged = "Already Correct"
+                    catch {
+                        $keychanged = "Error"
                     }
                 }
-                else{
+                else {
+                    $keychanged = "Already Correct"
+                }
+            }
+            else {
                 $InitialRegEntry = "Server Address not found"
-                }
-                $tempobj = @{
-                    "ComputerName" = $Targetname
-                    "Initial Registry Entry" = $InitialRegEntry
-                    "Key Changed" = $keychanged
-                }
-                $RegObj = New-Object -TypeName psobject -Property $tempobj
-                $RegObj
-            } | Select-Object "ComputerName","Initial Registry Entry","Key Changed" | Export-Csv -Path $LogDir\Set_LTAddr_Log.csv -Append -Force -NoTypeInformation
+            }
+            $tempobj = @{
+                "ComputerName"           = $Targetname
+                "Initial Registry Entry" = $InitialRegEntry
+                "Key Changed"            = $keychanged
+            }
+            $RegObj = New-Object -TypeName psobject -Property $tempobj
+            $RegObj
+        } | Select-Object "ComputerName", "Initial Registry Entry", "Key Changed" | Export-Csv -Path $LogDir\Set_LTAddr_Log.csv -Append -Force -NoTypeInformation
         #}
         <#Catch{
             Write-Host "Could not connect to $ComputerName"
         }#>
     }
-    End{
+    End {
         $FTimeStamp = (Get-Date -Format "dd-MM-yyyy HH-mm-ss")
-        if($JobRan){
+        if ($JobRan) {
             Remove-Job -Name Verify
             Remove-Item -Path $LogDir\WRMComp.xml
             Remove-Item -Path $LogDir\NOWRM.xml
@@ -868,19 +868,19 @@ synopsis
 }
 
 function Protect-Creds {
-<# Synopsis
+    <# Synopsis
 #>
     [cmdletbinding()]
-        param(
+    param(
 
-            [parameter(mandatory=$true)]
-            [string]$logdir
+        [parameter(mandatory = $true)]
+        [string]$logdir
 
-        )
-        $credentials = Get-Credential
-        $credentials | Export-Clixml "$logdir\incare.xml"
-        #$credentials.password | ConvertFrom-SecureString | set-content "$logdir\incarep.txt"
-        #$credentials.username | ConvertTo-SecureString -AsPlainText -Force | ConvertFrom-SecureString | Set-Content "$logdir\incareu.txt"
+    )
+    $credentials = Get-Credential
+    $credentials | Export-Clixml "$logdir\incare.xml"
+    #$credentials.password | ConvertFrom-SecureString | set-content "$logdir\incarep.txt"
+    #$credentials.username | ConvertTo-SecureString -AsPlainText -Force | ConvertFrom-SecureString | Set-Content "$logdir\incareu.txt"
 }
 
 Function Update-ICTools {
@@ -893,11 +893,16 @@ Function Update-ICTools {
     )
 
     Begin {
-  
-        #Production Variables
-        $psmurl = "https://raw.githubusercontent.com/InCare-PST/ICTools/master/Modules/$($PSMName)/$($PSMName).psm1"
-        $psdurl = "https://raw.githubusercontent.com/InCare-PST/ICTools/master/Modules/$($PSMName)/$($PSMName).psd1"
-            
+        if ($Beta) {
+            #Beta Test Variables
+            $psmurl = "https://raw.githubusercontent.com/InCare-PST/ICTools/master/Modules/$($PSMName)/$($PSMName)-Beta.psm1"
+            $psdurl = "https://raw.githubusercontent.com/InCare-PST/ICTools/master/Modules/$($PSMName)/$($PSMName)-Beta.psd1"
+        }
+        else {
+            #Production Variables
+            $psmurl = "https://raw.githubusercontent.com/InCare-PST/ICTools/master/Modules/$($PSMName)/$($PSMName).psm1"
+            $psdurl = "https://raw.githubusercontent.com/InCare-PST/ICTools/master/Modules/$($PSMName)/$($PSMName).psd1"
+        }
         #Determine current Module path
         $modulepaths = $env:PSModulePath.Split(";")
         $instance = 0
@@ -927,13 +932,13 @@ Function Update-ICTools {
             $psmhash = Get-FileHash -InputStream ($wc.openread($psmurl)) -Algorithm MD5 -ErrorAction Stop
         }
         catch {
-            { Write-Host "Could not access file at $($psmurl)" -ForegroundColor Yellow }
+            Write-Host "Could not access file at $($psmurl)" -ForegroundColor Yellow
         }
         try {
             $psdhash = Get-FileHash -InputStream ($wc.openread($psdurl)) -Algorithm MD5 -ErrorAction Stop
         }
         catch {
-            { Write-Host "Could not access file at $($psdurl)" -ForegroundColor Yellow }
+            Write-Host "Could not access file at $($psdurl)" -ForegroundColor Yellow
         }
         #declare non-dynamic variables
         $ictpath = "$installpath\$PSMName"
@@ -999,48 +1004,50 @@ Function Update-ICTools {
 }
 
 Function Import-ICTHistory {
-<# This is to Install PSExec #>
+    <# This is to Install PSExec #>
     $ictpath = "$Home\Documents\WindowsPowerShell\Modules\ICTools"
 
-if(Test-Path -Path $ictpath\history.csv){
-  Import-Csv $ictpath\history.csv | Add-History
-}else{
-  Write-Host "No History to Import"
-}
-#End of Function
+    if (Test-Path -Path $ictpath\history.csv) {
+        Import-Csv $ictpath\history.csv | Add-History
+    }
+    else {
+        Write-Host "No History to Import"
+    }
+    #End of Function
 }
 
 Function Install-PSExec {
-<# This is to Install PSExec #>
+    <# This is to Install PSExec #>
     $url = "https://live.sysinternals.com/psexec.exe"
     $syspath = "$env:windir\System32\psexec.exe"
 
 
 
-if(!(test-path -Path $syspath)){
+    if (!(test-path -Path $syspath)) {
 
-  [Net.ServicePointManager]::SecurityProtocol = "Tls12, Tls11, Tls, Ssl3"
-  $webclient = New-Object System.Net.WebClient
-  $webclient.downloadfile($url, $syspath)
+        [Net.ServicePointManager]::SecurityProtocol = "Tls12, Tls11, Tls, Ssl3"
+        $webclient = New-Object System.Net.WebClient
+        $webclient.downloadfile($url, $syspath)
 
-}
-#End of Function
+    }
+    #End of Function
 }
 
 Function Set-FixCellular {
-<# This is to correct the Windows 10 when Cellular is diconnected when ethernet plugged in #>
+    <# This is to correct the Windows 10 when Cellular is diconnected when ethernet plugged in #>
 
-$regpath = HKLM:\SOFTWARE\Microsoft\WcmSvc
-$regkey = IgnoreNonRoutableEthernet
+    $regpath = HKLM:\SOFTWARE\Microsoft\WcmSvc
+    $regkey = IgnoreNonRoutableEthernet
 
-if(!(test-path $regpath)){
-  New-Item -Path $regpath -Force | Out-Null
-  New-ItemProperty -Path $regpath -Name $regkey -Value "1" -PropertyType DWORD -Force | Out-Null
-}else{
-  New-ItemProperty -Path $regpath -Name $regkey -Value "1" -PropertyType DWORD -Force | Out-Null
-}
+    if (!(test-path $regpath)) {
+        New-Item -Path $regpath -Force | Out-Null
+        New-ItemProperty -Path $regpath -Name $regkey -Value "1" -PropertyType DWORD -Force | Out-Null
+    }
+    else {
+        New-ItemProperty -Path $regpath -Name $regkey -Value "1" -PropertyType DWORD -Force | Out-Null
+    }
 
-#End function
+    #End function
 }
 
 function Set-Immutid {
@@ -1059,124 +1066,124 @@ function Set-Immutid {
     .EXAMPLE
     .EXAMPLE
     #>
-        [CmdletBinding()]
-        param (
-            [switch]$apply,
+    [CmdletBinding()]
+    param (
+        [switch]$apply,
     
-            [switch]$export,
+        [switch]$export,
     
-            [string]$path = "c:\temp"
-        )
+        [string]$path = "c:\temp"
+    )
         
-        begin {
-            if(!(Test-Path -Path $path)){New-Item -Path $path -Type Directory -Force}
+    begin {
+        if (!(Test-Path -Path $path)) { New-Item -Path $path -Type Directory -Force }
     
-            if (Get-Module -ListAvailable -Name azuread){
-                Import-Module azuread
-            }
-            else{
-                Return "AzureAD module not installed."
-            }
-            if (Get-Module -ListAvailable -Name ActiveDirectory){
-                Import-Module ActiveDirectory
-            }
-            else{
-                Return "Active diretory module not installed."
-            }
-            if ($export) {
-                $date = Get-Date -Format yyyy-MM-dd-HH.mm.ss
-                $newpath = "$path\exporteduserlist-$date.csv"
-            }
-            Connect-AzureAD
-            $azureUsers = Get-AzureADUser -All $true
-            $adUsers = Get-ADUser -Filter * -Properties lastlogondate,objectguid
+        if (Get-Module -ListAvailable -Name azuread) {
+            Import-Module azuread
         }
+        else {
+            Return "AzureAD module not installed."
+        }
+        if (Get-Module -ListAvailable -Name ActiveDirectory) {
+            Import-Module ActiveDirectory
+        }
+        else {
+            Return "Active diretory module not installed."
+        }
+        if ($export) {
+            $date = Get-Date -Format yyyy-MM-dd-HH.mm.ss
+            $newpath = "$path\exporteduserlist-$date.csv"
+        }
+        Connect-AzureAD
+        $azureUsers = Get-AzureADUser -All $true
+        $adUsers = Get-ADUser -Filter * -Properties lastlogondate, objectguid
+    }
         
-        process {
-            $userlist = foreach($azuser in $azureUsers){
-                $adUser = $adUsers | Where-Object {$_.givenname -eq $azuser.GivenName -and $_.surname -eq $azuser.Surname}
-                if (@($adUser).count -eq 1) {
-                    $immid = [system.convert]::ToBase64String(([GUID]($adUser.objectguid)).tobytearray())
-                    $props = @{
-                        name = $adUser.Name
-                        samaccountname = $adUser.samaccountname
-                        objectguid = $adUser.objectguid
-                        AzureADid= $azuser.objectid
-                        mail = $azuser.Mail
-                        immuteID = $immid
-                        lastlogondate = $adUser.lastlogondate
-                    }
-                    $tempobject = New-Object psobject -Property $props
-                    $tempobject | Select-Object name,samaccountname,mail,lastlogondate,AzureADid,objectguid,immuteID
+    process {
+        $userlist = foreach ($azuser in $azureUsers) {
+            $adUser = $adUsers | Where-Object { $_.givenname -eq $azuser.GivenName -and $_.surname -eq $azuser.Surname }
+            if (@($adUser).count -eq 1) {
+                $immid = [system.convert]::ToBase64String(([GUID]($adUser.objectguid)).tobytearray())
+                $props = @{
+                    name           = $adUser.Name
+                    samaccountname = $adUser.samaccountname
+                    objectguid     = $adUser.objectguid
+                    AzureADid      = $azuser.objectid
+                    mail           = $azuser.Mail
+                    immuteID       = $immid
+                    lastlogondate  = $adUser.lastlogondate
                 }
-                if (@($adUser).count -lt 1) {
-                    $props = @{
-                        name = $azuser.DisplayName
-                        mail = $azuser.Mail
-                    }
-                    $tempobject = New-Object psobject -Property $props
-                    $tempobject | Select-Object name,mail
+                $tempobject = New-Object psobject -Property $props
+                $tempobject | Select-Object name, samaccountname, mail, lastlogondate, AzureADid, objectguid, immuteID
+            }
+            if (@($adUser).count -lt 1) {
+                $props = @{
+                    name = $azuser.DisplayName
+                    mail = $azuser.Mail
                 }
-            }
-            $userlist.count
-            if($apply){
-                foreach ($cuser in $userlist) {
-                    if ($cuser.immuteID) {
-                        $objectid = $cuser.AzureADid
-                        Set-AzureADUser -ObjectId $objectid -ImmutableId $cuser.immuteID
-                        $cuser.mail
-                    }
-                }
-            }
-            elseif ($export) {
-                $userlist | Select-Object name,samaccountname,mail,lastlogondate,AzureADid,objectguid,immuteID | Export-Csv -Path $newpath -NoTypeInformation
-            }
-            else{
-               $userlist | Select-Object name,samaccountname,mail,lastlogondate,AzureADid,immuteID
+                $tempobject = New-Object psobject -Property $props
+                $tempobject | Select-Object name, mail
             }
         }
+        $userlist.count
+        if ($apply) {
+            foreach ($cuser in $userlist) {
+                if ($cuser.immuteID) {
+                    $objectid = $cuser.AzureADid
+                    Set-AzureADUser -ObjectId $objectid -ImmutableId $cuser.immuteID
+                    $cuser.mail
+                }
+            }
+        }
+        elseif ($export) {
+            $userlist | Select-Object name, samaccountname, mail, lastlogondate, AzureADid, objectguid, immuteID | Export-Csv -Path $newpath -NoTypeInformation
+        }
+        else {
+            $userlist | Select-Object name, samaccountname, mail, lastlogondate, AzureADid, immuteID
+        }
+    }
         
-        end {
+    end {
             
-        }
+    }
 }
 
-function Get-FSMORoles{
+function Get-FSMORoles {
     $forest = Get-ADForest
     $domain = Get-ADDomain
 
     New-Object -TypeName psobject -Property @{
-        SchemaMaster = $forest.SchemaMaster
-        DomainNamingMaster = $forest.DomainNamingMaster
-        PDCEmulator = $domain.PDCEmulator
-        RIDMaster = $domain.RIDMaster
+        SchemaMaster         = $forest.SchemaMaster
+        DomainNamingMaster   = $forest.DomainNamingMaster
+        PDCEmulator          = $domain.PDCEmulator
+        RIDMaster            = $domain.RIDMaster
         InfrastructureMaster = $domain.InfrastructureMaster
     }
 }
 
-Function Get-ServiceAccounts{
+Function Get-ServiceAccounts {
     [cmdletbinding()]
-        param(
+    param(
 
-            [switch]$export,
+        [switch]$export,
 
-            [string]$path = "C:\temp",
+        [string]$path = "C:\temp",
 
-            [string]$username
+        [string]$username
             
-        )
-    Begin{
+    )
+    Begin {
         Write-Verbose "Getting list of online servers"
         $date = (get-date).AddDays(-60)
         $onlineservers = @()
         $offlineservers = @()
-        $allservers = Get-ADComputer -filter * -Properties operatingsystem,lastlogondate | Where-Object {$_.operatingsystem -match "server" -and $_.enabled -eq $true -and $_.lastlogondate -ge $date}
-        foreach ($server in $allservers){
-            if (Test-Connection $server.name -Count 1 -Quiet){
+        $allservers = Get-ADComputer -filter * -Properties operatingsystem, lastlogondate | Where-Object { $_.operatingsystem -match "server" -and $_.enabled -eq $true -and $_.lastlogondate -ge $date }
+        foreach ($server in $allservers) {
+            if (Test-Connection $server.name -Count 1 -Quiet) {
                 $onlineservers += $server
             }
-            else{
-                $offlineservers +=$server
+            else {
+                $offlineservers += $server
             }
         }
         Write-Host -ForegroundColor Green "The following servers are online and will be examined."
@@ -1184,22 +1191,22 @@ Function Get-ServiceAccounts{
         Write-Host -ForegroundColor Red "The following servers are offline and will not be examined."
         $offlineservers.Name
     }
-    Process{
+    Process {
         $serverNameList = $onlineservers.Name
         $serviceList = Invoke-Command -ComputerName $serverNameList {
-            Get-WmiObject win32_service | Select-Object systemName,displayname,startname
+            Get-WmiObject win32_service | Select-Object systemName, displayname, startname
         }
-        if ([bool]$username){
-            $finalList = $serviceList | Where-Object {$_.startname -match $username} | Sort-Object -Property systemName
+        if ([bool]$username) {
+            $finalList = $serviceList | Where-Object { $_.startname -match $username } | Sort-Object -Property systemName
         }
         else {
             $finalList = $serviceList | Sort-Object -Property systemName
         }
-        if ($export){
-             $finalList | Select-Object systemName,displayname,startname | Export-Csv -Path "$path\serviceaccounts.csv" -NoTypeInformation 
+        if ($export) {
+            $finalList | Select-Object systemName, displayname, startname | Export-Csv -Path "$path\serviceaccounts.csv" -NoTypeInformation 
         }
         else {
-            $finalList | Select-Object systemName,displayname,startname
+            $finalList | Select-Object systemName, displayname, startname
         }
 
         <# Commenting out, going with Invoke-Command
@@ -1232,10 +1239,10 @@ Function Get-ServiceAccounts{
         $services = Get-CimInstance -CimSession (Get-CimSession) -ClassName win32_service | where {$_.startname -notmatch "local|Network\sService|NetworkService" -and $_.StartName -ne $null}
     #>
     }
-    End{
+    End {
     
     }
 }
 
 
-Export-ModuleMember -Function Get-FSMORoles,Set-Immutid,Set-LTServerAdd,Get-InactiveUsers,Remove-MalFiles,Get-OnlineADComps,Add-DHCPv4Reservation,Get-LTServerAdd,Protect-Creds,Update-ICTools,Install-PSExec,Import-ICTHistory,Set-FixCellular,Get-ServiceAccounts
+Export-ModuleMember -Function Get-FSMORoles, Set-Immutid, Set-LTServerAdd, Get-InactiveUsers, Remove-MalFiles, Get-OnlineADComps, Add-DHCPv4Reservation, Get-LTServerAdd, Protect-Creds, Update-ICTools, Install-PSExec, Import-ICTHistory, Set-FixCellular, Get-ServiceAccounts
