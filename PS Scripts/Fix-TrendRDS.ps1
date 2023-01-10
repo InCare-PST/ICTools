@@ -1,5 +1,7 @@
-#Update TrendMicro for Terminal Server Instances
 
+
+#Update TrendMicro for Terminal Server Instances - JTGallups
+#Variables 
 $tmisc="HKLM:\SOFTWARE\Wow6432Node\TrendMicro\PC-cillinNTCorp\CurrentVersion\Misc."
 $unloadpass=Read-Host -Prompt "Unload Password" #-MaskInput
 $trend="C:\Program Files (x86)\Trend Micro\Client Server Security Agent"
@@ -7,6 +9,8 @@ $cpmconfig="C:\Program Files (x86)\Trend Micro\Client Server Security Agent\Host
 $cpmbak="C:\Program Files (x86)\Trend Micro\Client Server Security Agent\HostedAgent\CPM"
 $bakdate="CpmConfig-$(get-date -f yyy-MM-dd).bak"
 $TmPreFilter="HKLM:\SYSTEM\CurrentControlSet\Services\TmPreFilter\Parameters"
+$TMFilter="HKLM:\SYSTEM\CurrentControlSet\Services\TmFilter\Parameters"
+$RTScan="HKLM:\SOFTWARE\WOW6432Node\TrendMicro\PC-cillinNTCorp\CurrentVersion\Real Time Scan Configuration"
 #$MemoryManagement="HKLM:\SYSTEM\CurrentControlSet\Control\Session Manager\Memory Management"
 
 #Unload TrendMicro
@@ -20,9 +24,16 @@ write-host "One more minute..." -ForegroundColor Green
 start-sleep -Seconds 60
 
 
-#Update RCS
+#Update MISC.
 IF(!(Test-Path $tmisc)){new-item -Path $tmisc -Force}
 New-ItemProperty -Path $tmisc -Name "RCS" -Value 202 -PropertyType DWORD -Force
+New-ItemProperty -Path $tmisc -Name "EnableProcessScanForStartUp" -Value 0 -PropertyType DWORD -Force
+New-ItemProperty -Path $tmisc -Name "EnableProcessScanWhenScan" -Value 0 -PropertyType DWORD -Force
+
+#Update Real Time Scan Configuration
+IF(!(Test-Path $RTScan)){new-item -path $RTScan -Force}
+New-ItemProperty -Path $RTScan -Name "NTRtScanInitSleep" -Value 18000 -PropertyType DWORD -Force
+
 
 #Update CPM Config
 Copy-Item $cpmconfig $cpmbak\$bakdate -Force
@@ -31,6 +42,10 @@ Copy-Item $cpmconfig $cpmbak\$bakdate -Force
 #Update TmPreFilter
 IF(!(Test-Path $TmPreFilter)){new-item -Path $TmPreFilter -Force}
 New-ItemProperty -Path $TmPreFilter -Name "EnableMiniFilter" -Value 1 -PropertyType DWORD -Force
+
+#Update TMFilter
+IF(!(Test-Path $TmFilter)){new-item -Path $TmFilter -Force}
+New-ItemProperty -Path $TmFilter -Name "DisableCtProcCheck" -Value 1 -PropertyType DWORD -Force
 
 #Update PagedPoolSize Windows 2k8 Version and below
 #IF(!(Test-Path $MemoryManagement)){new-item -Path $MemoryManagement -Force}
@@ -49,3 +64,11 @@ Exclude the following file extensions from scanning on a Citrix and Terminal Ser
 Exclude the roaming profiles from the RealTime scan on the fileserver.
 Create a daily/weekly scheduled scan of the roaming profiles in off-peak hours on the fileserver.
 " -ForegroundColor DarkGreen -BackgroundColor White
+
+
+
+############
+#   Scratchpad Area
+#
+#  & '\\nctpc.local\store\users\ThriveAdmin\My Documents\Update-TrendRDS.ps1'
+#  & 'C:\Program Files (x86)\Trend Micro\Client Server Security Agent\PccNtMon.exe'
