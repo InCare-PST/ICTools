@@ -21,24 +21,6 @@ Add-Type -AssemblyName PresentationCore,PresentationFramework
     $MemoryManagement="HKLM:\SYSTEM\CurrentControlSet\Control\Session Manager\Memory Management"
     $osversion=(Get-CimInstance CIM_OperatingSystem).buildnumber
 
-#Message Box Variables
-    $ButtonType = [System.Windows.MessageBoxButton]::ok
-    $MessageboxTitle = “Hosted console actions required!”
-    $Messageboxbody = “1) Restart the server, memory management will then be set.
-
-    2) Exclude the following file extensions from scanning on a Citrix and Terminal Server:
-    • .LOG
-    • .DAT
-    • .TMP
-    • .POL
-    • .PF
-
-    3) Exclude the roaming profiles & redirected folders from the real-time scan on the fileserver.
-
-    4)Create a daily/weekly scheduled scan of the roaming profiles in off-peak hours on the fileserver.
-    ”
-    $MessageIcon = [System.Windows.MessageBoxImage]::Warning
-
 
 #Unload TrendMicro
     Start-Process "$trend\PccNtMon.exe" -ArgumentList "-n $(ConvertFrom-SecureString -SecureString $unloadpass -AsPlainText)"
@@ -87,4 +69,25 @@ Add-Type -AssemblyName PresentationCore,PresentationFramework
     }
 
 #Display warning message about addtional hosted console changes required
-[System.Windows.MessageBox]::Show($Messageboxbody,$MessageboxTitle,$ButtonType,$messageicon)
+#Message Box Variables
+    $ButtonType =[System.Windows.MessageBoxButton]::ok
+    $MessageboxTitle=“Hosted console actions required!”
+    $Messageboxbody=“
+    1) Restart the server, memory management will then be set.
+
+    2) Exclude the following file extensions from scanning on the RDS Farm:
+    • .LOG
+    • .DAT
+    • .TMP
+    • .POL
+    • .PF
+
+    3) Exclude the roaming profiles & redirected folders from the real-time scan on the fileserver.
+
+    4)Create a daily/weekly scheduled scan of the roaming profiles in off-peak hours on the fileserver.
+    ”
+    $MessageIcon=[System.Windows.MessageBoxImage]::Warning
+
+    [System.Windows.MessageBox]::Show($Messageboxbody,$MessageboxTitle,$ButtonType,$messageicon)
+
+
