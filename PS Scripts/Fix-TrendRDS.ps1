@@ -3,7 +3,7 @@
 #Update TrendMicro for Terminal Server Instances - JTGallups
 #Variables 
 $tmisc="HKLM:\SOFTWARE\Wow6432Node\TrendMicro\PC-cillinNTCorp\CurrentVersion\Misc."
-$unloadpass=Read-Host -Prompt "Unload Password" #-MaskInput
+$unloadpass=Read-Host -Prompt "Unload Password" -AsSecureString
 $trend="C:\Program Files (x86)\Trend Micro\Client Server Security Agent"
 $cpmconfig="C:\Program Files (x86)\Trend Micro\Client Server Security Agent\HostedAgent\CPM\CpmConfig.ini"
 $cpmbak="C:\Program Files (x86)\Trend Micro\Client Server Security Agent\HostedAgent\CPM"
@@ -14,7 +14,7 @@ $RTScan="HKLM:\SOFTWARE\WOW6432Node\TrendMicro\PC-cillinNTCorp\CurrentVersion\Re
 #$MemoryManagement="HKLM:\SYSTEM\CurrentControlSet\Control\Session Manager\Memory Management"
 
 #Unload TrendMicro
-Start-Process "$trend\PccNtMon.exe" -ArgumentList "-n $unloadpass"
+Start-Process "$trend\PccNtMon.exe" -ArgumentList "-n $(ConvertFrom-SecureString -SecureString $unloadpass -AsPlainText)"
 #Unload Wait for it to finish unloading
 write-host "Sleeping 3 Minutes..." -ForegroundColor Green
 start-sleep -Seconds 60
@@ -67,8 +67,3 @@ Create a daily/weekly scheduled scan of the roaming profiles in off-peak hours o
 
 
 
-############
-#   Scratchpad Area
-#
-#  & '\\nctpc.local\store\users\ThriveAdmin\My Documents\Update-TrendRDS.ps1'
-#  & 'C:\Program Files (x86)\Trend Micro\Client Server Security Agent\PccNtMon.exe'
