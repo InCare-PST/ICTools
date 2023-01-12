@@ -1,6 +1,6 @@
-
-
 #Update TrendMicro for Terminal Server Instances - JTGallups
+#
+#
 #Variables 
 $tmisc="HKLM:\SOFTWARE\Wow6432Node\TrendMicro\PC-cillinNTCorp\CurrentVersion\Misc."
 $unloadpass=Read-Host -Prompt "Unload Password" -AsSecureString
@@ -11,7 +11,8 @@ $bakdate="CpmConfig-$(get-date -f yyy-MM-dd).bak"
 $TmPreFilter="HKLM:\SYSTEM\CurrentControlSet\Services\TmPreFilter\Parameters"
 $TMFilter="HKLM:\SYSTEM\CurrentControlSet\Services\TmFilter\Parameters"
 $RTScan="HKLM:\SOFTWARE\WOW6432Node\TrendMicro\PC-cillinNTCorp\CurrentVersion\Real Time Scan Configuration"
-#$MemoryManagement="HKLM:\SYSTEM\CurrentControlSet\Control\Session Manager\Memory Management"
+$MemoryManagement="HKLM:\SYSTEM\CurrentControlSet\Control\Session Manager\Memory Management"
+$osversion=(Get-CimInstance CIM_OperatingSystem).buildnumber
 
 #Unload TrendMicro
 Start-Process "$trend\PccNtMon.exe" -ArgumentList "-n $(ConvertFrom-SecureString -SecureString $unloadpass -AsPlainText)"
@@ -47,10 +48,11 @@ New-ItemProperty -Path $TmPreFilter -Name "EnableMiniFilter" -Value 1 -PropertyT
 IF(!(Test-Path $TmFilter)){new-item -Path $TmFilter -Force}
 New-ItemProperty -Path $TmFilter -Name "DisableCtProcCheck" -Value 1 -PropertyType DWORD -Force
 
-#Update PagedPoolSize Windows 2k8 Version and below
-#IF(!(Test-Path $MemoryManagement)){new-item -Path $MemoryManagement -Force}
-#New-ItemProperty -Path $MemoryManagement -Name "PagedPoolSize" -Value "FFFFFFFF" -PropertyType DWORD -Force
-
+#Update PagedPoolSize Windows 2k8 Version and below (Build 9200 is Server 2012 RTM)
+IF([int]$osversion -lt "9200"){
+IF(!(Test-Path $MemoryManagement)){new-item -Path $MemoryManagement -Force}
+New-ItemProperty -Path $MemoryManagement -Name "PagedPoolSize" -Value "FFFFFFFF" -PropertyType DWORD -Force
+}
 
 Write-Host "
 
