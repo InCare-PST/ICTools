@@ -1,18 +1,16 @@
 [System.Reflection.Assembly]::LoadWithPartialName('Microsoft.VisualBasic') | Out-Null
 
-<#
-Verify DAG Location and Domains Prior to running script
-#>
-[cmdletbinding()]
+
+#Verify DAG Location and Domains Prior to running script
+#[CmdletBinding()]
 param(
-    [switch]$Start
-    [switch]$Restore
-    [switch]$Check
-  )
+[switch]$Start,
+[switch]$Restore,
+[switch]$Check
+)
 
 
 ###Connect MSOL
-
 if(Get-Module -ListAvailable -Name MSOnline){
 import-module MSOnline
 Connect-MsolService
@@ -39,19 +37,20 @@ $certData = [system.convert]::tobase64string($cert.rawdata)
 
 
 #Production Settings
-$update = Set-MsolDomainAuthentication –DomainName $dom -Authentication Federated -PassiveLogOnUri $url -ActiveLogOnUri $url -IssuerUri $uri -LogOffUri $logoutUrl -PreferredAuthenticationProtocol SAMLP -SigningCertificate $certData
-$rollback = Set-MsolDomainAuthentication –DomainName $dom -Authentication Managed
-$verify = Get-MsolDomain -DomainName $dom |fl *
+$update = Set-MsolDomainAuthentication -DomainName $dom -Authentication Federated -PassiveLogOnUri $url -ActiveLogOnUri $url -IssuerUri $uri -LogOffUri $logoutUrl -PreferredAuthenticationProtocol SAMLP -SigningCertificate $certData
+$rollback = Set-MsolDomainAuthentication -DomainName $dom -Authentication Managed
+$verify = Get-MsolDomain -DomainName $dom |Format-List *
 
 
 
 
+<#
 #Test Settings
 $testupdate = write-host -ForegroundColor Green "$update"
 $testrollback = write-host -ForegroundColor Green "$rollback"
 $testverify = write-host -ForegroundColor Green "$verify"
+#>
 
-
-if($Start){$update}
-if($Restore){$rollback}
-if($Check){$Verify}
+if([bool]$Start){$update}
+if([bool]$Restore){$rollback}
+if([bool]$Check){$Verify}
