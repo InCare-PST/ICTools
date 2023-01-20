@@ -1,6 +1,6 @@
 #Printer Log for Migration
 
-$var = "\\lci.local\shares\deployment"
+$var="Shared Folder Location" #Example "\\msft.local\shares\deployment"
 $printers = get-printer | Where-Object Type -eq "Connection"
 $comp = "$env:computername"
 $user = "$env:username"
