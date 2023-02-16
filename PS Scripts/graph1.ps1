@@ -1,7 +1,7 @@
 Connect-Graph -Scopes "User.Read.All"
 
 # Retrieve a list of users
-$users = Get-GraphUser -Top 1000
+$users = Get-MgUser -Top 1000
 
 # Create an empty array to store the user data
 $userData = @()
@@ -9,7 +9,7 @@ $userData = @()
 # Loop through each user
 foreach ($user in $users) {
     # Retrieve the user's licensing information
-    $licensing = Get-GraphUserLicenseDetails -Id $user.id
+    $licensing = Get-MGUserLicenseDetail -UserId $user.id
 
     # Create an object to store the user's data
     $userObject = [PSCustomObject]@{
@@ -23,4 +23,4 @@ foreach ($user in $users) {
 }
 
 # Export the user data to a CSV file
-$userData | Export-Csv -Path "UserData.csv" -NoTypeInformation
+$userData | Export-Csv -Path "c:\temp\UserData.csv" -NoTypeInformation
