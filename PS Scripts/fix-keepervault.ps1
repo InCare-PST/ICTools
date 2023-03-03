@@ -1,6 +1,13 @@
-$bad = "C:\Users\JGallups\AppData\Local\Microsoft\Edge\User Data\Default\Extensions\lfochlioelphaglamdcakfjemolpichk"
-$bak = "C:\Users\JGallups\AppData\Local\Microsoft\Edge\User Data\Default\Extensions\keepervault"
+param (
+  [switch]$backup
+)
 
-Remove-Item $bad -Recurse -Force -Verbose
-Start-Sleep 30
-invoke-command -ScriptBlock {robocopy $bak $bad /MIR /E}
+$ext = "C:\Users\JGallups\AppData\Local\Microsoft\Edge\User Data\Default\Extensions\lfochlioelphaglamdcakfjemolpichk"
+$bak = "C:\backups\keepervault"
+
+if([bool]$backup){robocopy $ext $bak /MIR /E}
+else{
+    Remove-Item $ext -Recurse -Force -Verbose
+    invoke-command -ScriptBlock {robocopy $bak $ext /MIR /E}
+}
+
