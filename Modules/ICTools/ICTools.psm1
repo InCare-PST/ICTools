@@ -1084,12 +1084,14 @@ function Set-Immutid {
         else {
             Return "AzureAD module not installed."
         }
+
         if (Get-Module -ListAvailable -Name ActiveDirectory) {
             Import-Module ActiveDirectory
         }
         else {
             Return "Active diretory module not installed."
         }
+        
         if ($export) {
             $date = Get-Date -Format yyyy-MM-dd-HH.mm.ss
             $newpath = "$($path)\exporteduserlist-$($date).csv"
