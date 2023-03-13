@@ -1092,7 +1092,7 @@ function Set-Immutid {
         }
         if ($export) {
             $date = Get-Date -Format yyyy-MM-dd-HH.mm.ss
-            $newpath = "$path\exporteduserlist-$($date).csv"
+            $newpath = "$($path)\exporteduserlist-$($date).csv"
         }
         Connect-AzureAD
         $azureUsers = Get-AzureADUser -All $true
