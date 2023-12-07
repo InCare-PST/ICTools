@@ -7,7 +7,7 @@ Import-Module Microsoft.Graph.Authentication
 # Your app registration details
 $clientID = "your-client-id"
 $tenantID = "your-tenant-id"
-$scope = "Domain.Read.All"  # Specify the "User.Read" scope for basic user profile read access
+$scope = "User.Read.All,Organization.Read.All"  # Specify the "User.Read" scope for basic user profile read access
 
 # Connect to Microsoft Graph using Connect-MgGraph with specified scope
 Connect-MgGraph -ClientId $clientID -TenantId $tenantID -Scopes $scope
@@ -16,10 +16,10 @@ Connect-MgGraph -ClientId $clientID -TenantId $tenantID -Scopes $scope
 $mappingFileUrl = "https://download.microsoft.com/download/e/3/e/e3e9faf2-f28b-490a-9ada-c6089a1fc5b0/Product%20names%20and%20service%20plan%20identifiers%20for%20licensing.csv"
 
 # Download the mapping file
-$mappingFile = Invoke-RestMethod -Uri $mappingFileUrl -OutFile "C:\temp\MappingFile.csv"
+Invoke-RestMethod -Uri $mappingFileUrl -OutFile "C:\temp\MappingFile.csv"
 
 # Load the mapping from the downloaded CSV file
-$planMapping = Import-Csv $mappingFile
+$planMapping = Import-Csv "C:\temp\MappingFile.csv"
 
 # Step 2: Retrieve information for each mailbox
 $mailboxes = Get-MgUser -All
@@ -32,7 +32,7 @@ $exportedData = foreach ($mailbox in $mailboxes) {
         $friendlyname = $planmapping | Where-Object {$_.GUID -eq $license} | Select-Object -First 1 | Select-Object Product_Display_Name
         $assignedlicenses += $friendlyname
     }
-    $liclist = $assignedlicenses.Product_Display_Name -join ","
+    $liclist = $assignedlicenses.Product_Display_Name -join "+"
     $officephone = $mailbox.BusinessPhones -join ","
     
     [PSCustomObject]@{
@@ -64,6 +64,22 @@ Import-Module Microsoft.Graph.beta.Identity.DirectoryManagement
 
 $subskus = Get-MgBetaSubscribedSku -All
 
+$subscribtionexport = foreach($subsku in $subskus){
+    $basesku = $subsku.skuid
+    $friendlyname = $planMapping | Where-Object {$_.GUID -eq $basesku} | Select-Object -First 1 | Select-Object -ExpandProperty Product_Display_Name
+
+    #$friendlyname = $friendlyname.Product_Display_Name
+
+    [PSCustomObject]@{
+        License = $friendlyname
+        Enabled = $subsku.PrepaidUnits.Enabled
+        Assigned = $subsku.ConsumedUnits
+        Expired = $subsku.PrepaidUnits.Suspended
+        Available = $subsku.prepaidunits.enabled - $subsku.consumedUnits
+    }
+}
+
+$subscribtionexport | Where-Object {$_.License -ne $null} |  export-csv -Path C:\temp\Stansell_Licenses.csv -NoTypeInformation -Force
 
 function Export-TenantUsers {
     param(
