@@ -5,28 +5,48 @@ function Get-TenantInfo{
 
         [string]$clientname = "",
 
-        [string]$scope = "User.Read.All,Organization.Read.All"
+        [string]$scope = "User.Read.All,Organization.Read.All",
+
+        [string]$filename = "MappingFile.csv"
     )
 
-    # Your app registration details
-    $clientID = "your-client-id"
-    $tenantID = "your-tenant-id"
-    $scope = "User.Read.All,Organization.Read.All"  # Specify the "User.Read" scope for basic user profile read access
+    # create full path to mapping file
+    $fullmappingfile = $path + "`\" + $filename
+
+    # create full path for export files
+    $mailboxexport = $path + "`\" + $clientname + "-mailbox.csv"
+    $licenseexport = $path + "`\" + $clientname + "-licenses.csv"
+
+    If(Get-Module -ListAvailable Microsoft.Graph.Beta.Users){
+        Import-Module Microsoft.Graph.Beta.Users
+    }else{
+        Write-Host "Required Microsoft Module not installed. Please run 'Install-Module Microsoft.Graph.Beta'" -ForegroundColor Red
+        exit
+    }
+
+
+    If(Get-Module -ListAvailable Microsoft.Graph.Beta.Identity.DirectoryManagement){
+        Import-Module Microsoft.Graph.Beta.Identity.DirectoryManagement
+    }else{
+        Write-Host "Required Microsoft Module not installed. Please run 'Microsoft.Graph.Beta.Identity.DirectoryManagement'" -ForegroundColor Red
+        exit
+    }
+
 
     # Connect to Microsoft Graph using Connect-MgGraph with specified scope
-    Connect-MgGraph -ClientId $clientID -TenantId $tenantID -Scopes $scope
+    Connect-MgGraph -Scopes $scope -NoWelcome
 
     # Define the URL of the mapping file hosted online
     $mappingFileUrl = "https://download.microsoft.com/download/e/3/e/e3e9faf2-f28b-490a-9ada-c6089a1fc5b0/Product%20names%20and%20service%20plan%20identifiers%20for%20licensing.csv"
 
     # Download the mapping file
-    Invoke-RestMethod -Uri $mappingFileUrl -OutFile "C:\temp\MappingFile.csv"
+    Invoke-RestMethod -Uri $mappingFileUrl -OutFile $fullmappingfile
 
     # Load the mapping from the downloaded CSV file
-    $planMapping = Import-Csv "C:\temp\MappingFile.csv"
+    $planMapping = Import-Csv $fullmappingfile
 
     # Step 2: Retrieve information for each mailbox
-    $mailboxes = Get-MgUser -All
+    $mailboxes = Get-MgBetaUser -All
 
     # Step 3: Format and export the information
     $exportedData = foreach ($mailbox in $mailboxes) {
@@ -62,7 +82,7 @@ function Get-TenantInfo{
     }
 
     # Export the data to a CSV file
-    $exportedData | Export-Csv -Path "C:\Path\To\Exported\MailboxInfo.csv" -NoTypeInformation
+    $exportedData | Export-Csv -Path $mailboxexport -NoTypeInformation
 
     Import-Module Microsoft.Graph.beta.Identity.DirectoryManagement
 
@@ -82,53 +102,5 @@ function Get-TenantInfo{
             Available = $subsku.prepaidunits.enabled - $subsku.consumedUnits
         }
     }
-    $subscribtionexport | Where-Object {$_.License -ne $null} |  export-csv -Path C:\temp\Stansell_Licenses.csv -NoTypeInformation -Force
+    $subscribtionexport | Where-Object {$_.License -ne $null} |  export-csv -Path $licenseexport -NoTypeInformation -Force
 }
-
-function Export-TenantUsers {
-    param(
-        [Parameter(Mandatory=$true)]
-        [string]$AppId,
-
-        [Parameter(Mandatory=$true)]
-        [string]$AppSecret,
-
-        [Parameter(Mandatory=$true)]
-        [string]$TenantId
-    )
-
-    # Import required module
-    Import-Module Microsoft.Graph.Users.Actions
-
-    # Connect to Microsoft Graph
-    $credential = New-Object System.Management.Automation.PSCredential($AppId, (ConvertTo-SecureString $AppSecret -AsPlainText -Force))
-    Connect-MgGraph -Credential $credential -TenantId $TenantId -Scopes Domain.Read.All
-
-    # Get the list of users
-    $users = Get-MgUser -All
-
-    # Create an empty array to hold user data
-    $userData = @()
-
-    # Loop through each user
-    foreach ($user in $users) {
-        # Get user licenses
-        $licenses = $user.AssignedLicenses.SkuId
-
-        # Create a PSObject for each user
-        $userObj = New-Object PSObject
-        $userObj | Add-Member -MemberType NoteProperty -Name "Display Name" -Value $user.DisplayName
-        $userObj | Add-Member -MemberType NoteProperty -Name "UPN" -Value $user.UserPrincipalName
-
-        # Iterate over each license and add it to the user object
-        foreach ($license in $licenses) {
-            $userObj | Add-Member -MemberType NoteProperty -Name "License" -Value $license
-        }
-
-        # Add the user object to the array
-        $userData += $userObj
-    }
-
-    # Export the data to a CSV file
-    $userData | Export-Csv -Path .\UserData.csv -NoTypeInformation
-} 
