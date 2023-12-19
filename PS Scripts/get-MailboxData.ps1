@@ -11,14 +11,19 @@ function Get-TenantInfo{
     )
 
     begin{
+
+        #Making sure there is not an active MGGraph connection
+        disconnect-MgGraph -InformationAction SilentlyContinue -ErrorAction SilentlyContinue
+
         $date = Get-Date
         
         # create full path to mapping file
-        $fullmappingfile = $path + "`\" + $filename
+        #$fullmappingfile = $path + "`\" + $filename
 
         # create full path for export files
-        $mailboxexport = $path + "`\" + $clientname + "-mailbox.csv"
-        $licenseexport = $path + "`\" + $clientname + "-licenses.csv"
+        $exportedFile = $path + "`\" + $date.tostring("dd-MM-yyyy") + " " + $clientname + "`.xlsx"
+        #$mailboxexport = $path + "`\" + $clientname + "-mailbox.csv"
+        #$licenseexport = $path + "`\" + $clientname + "-licenses.csv"
 
         # Define the URL of the mapping file hosted online
         $mappingFileUrl = "https://download.microsoft.com/download/e/3/e/e3e9faf2-f28b-490a-9ada-c6089a1fc5b0/Product%20names%20and%20service%20plan%20identifiers%20for%20licensing.csv"        
@@ -41,6 +46,13 @@ function Get-TenantInfo{
             Import-Module Microsoft.Graph.Beta.Identity.DirectoryManagement
         }else{
             Write-Host "Required Microsoft Module not installed. Please run 'Microsoft.Graph.Beta.Identity.DirectoryManagement'" -ForegroundColor Red
+            exit
+        }
+
+        If(Get-Module -ListAvailable ImportExcel){
+            Import-Module ImportExcel
+        }else{
+            Write-Host "Required Microsoft Module not installed. Please run 'Install-Module ImportExcel'" -ForegroundColor Red
             exit
         }
         # Connect to Microsoft Graph using Connect-MgGraph with specified scope
@@ -86,8 +98,15 @@ function Get-TenantInfo{
             }
         }
 
+        #Filter the list based on those with and without licenses
+        $licensedAccounts = $exportedData | Where-Object {$_.Licenses -ne ""}
+        $unlicensedAccounts = $exportedData | Where-Object {$_.Licenses -eq ""}
+
+        #find number of licensed accounts and set starting row for subscriptions
+        $startingrow = $licensedAccounts.count + 5
+
         # Export the data to a CSV file
-        $exportedData | Export-Csv -Path $mailboxexport -NoTypeInformation
+        # $exportedData | Export-Csv -Path $mailboxexport -NoTypeInformation
 
         $subskus = Get-MgBetaSubscribedSku -All
 
@@ -105,12 +124,19 @@ function Get-TenantInfo{
                 Available = $subsku.prepaidunits.enabled - $subsku.consumedUnits
             }
         }
-        $subscribtionexport | Where-Object {$_.License -ne $null} |  export-csv -Path $licenseexport -NoTypeInformation -Force
+        #$subscribtionexport | Where-Object {$_.License -ne $null} |  export-csv -Path $licenseexport -NoTypeInformation -Force
+
+        #Export to Excel file 
+        $licensedAccounts | Export-Excel $exportedFile -AutoSize -TableName Licensed -TableStyle Medium2 -WorksheetName "O365 Licensed Accounts"
+
+        $unlicensedAccounts | Export-Excel $exportedFile -AutoSize -TableName UnLicensed -TableStyle Medium2 -WorksheetName "O365 UnLicensed Accounts"
+
+        $subscribtionexport | Export-Excel $exportedFile -AutoSize -StartRow $startingrow -TableName Subscriptions -TableStyle Medium2 -WorksheetName "O365 Licensed Accounts" 
     }
 
     end{
 
-        Disconnect-MgGraph
+        Disconnect-MgGraph -InformationAction SilentlyContinue -ErrorAction SilentlyContinue
     }
 
 
