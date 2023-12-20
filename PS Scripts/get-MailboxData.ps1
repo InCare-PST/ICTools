@@ -1,7 +1,38 @@
-function Get-TenantInfo{
+function Find-Folders {
+    [Reflection.Assembly]::LoadWithPartialName("System.Windows.Forms") | Out-Null
+    [System.Windows.Forms.Application]::EnableVisualStyles()
+    $browse = New-Object System.Windows.Forms.FolderBrowserDialog
+    $browse.SelectedPath = "C:\"
+    $browse.ShowNewFolderButton = $false
+    $browse.Description = "Select a directory for file export"
+
+    $loop = $true
+    while($loop)
+    {
+        if ($browse.ShowDialog() -eq "OK")
+        {
+        $loop = $false
+		
+		#Insert your script here
+		
+        } else
+        {
+            $res = [System.Windows.Forms.MessageBox]::Show("You clicked Cancel. Would you like to try again or exit?", "Select a location", [System.Windows.Forms.MessageBoxButtons]::RetryCancel)
+            if($res -eq "Cancel")
+            {
+                #Ends script
+                return
+            }
+        }
+    }
+    $browse.SelectedPath
+    $browse.Dispose()
+}
+
+function Get-SubscriptionInfo{
     param(
 
-        [string]$path = "C:\temp",
+        [string]$path,
 
         [string]$clientname = "",
 
@@ -13,17 +44,44 @@ function Get-TenantInfo{
     begin{
 
         #Making sure there is not an active MGGraph connection
-        disconnect-MgGraph -InformationAction SilentlyContinue -ErrorAction SilentlyContinue
+        Disconnect-MgGraph -InformationAction SilentlyContinue -ErrorAction SilentlyContinue
 
         $date = Get-Date
         
-        # create full path to mapping file
-        #$fullmappingfile = $path + "`\" + $filename
+        #determine working folder
+        if(![bool]$path){
+            $path = Find-Folders
+        }
+
+        #create filename
+        $xlsxfilename = $date.tostring("dd-MM-yyyy") + " " + $clientname + "`.xlsx"
 
         # create full path for export files
-        $exportedFile = $path + "`\" + $date.tostring("dd-MM-yyyy") + " " + $clientname + "`.xlsx"
-        #$mailboxexport = $path + "`\" + $clientname + "-mailbox.csv"
-        #$licenseexport = $path + "`\" + $clientname + "-licenses.csv"
+        $exportedFile = $path + "`\" + $xlsxfilename
+
+        #check if path exists. If not, create it.
+        if (!(Test-Path $Path)) {
+            Write-Host "Creating Directory $Path" -ForegroundColor Yellow
+            New-Item -Path $Path -ItemType Directory
+        }
+
+        #check to see if file already exists. If it does prompt the user to see if they want the existing file deleted.
+        if(Test-Path $exportedFile){
+            Write-Host "File $($xlsxfilename) already exists. Would you like to delete it?" -ForegroundColor Yellow
+            
+            $wshell = New-Object -ComObject Wscript.Shell
+            $answer = $wshell.Popup("Delete $($xlsxfilename)?",0,"Delete File",32+4)
+        }
+
+        #delete file or exit script
+        if($answer -eq 6){
+            Remove-Item -Path $exportedFile -Force
+        }
+        else {
+            Write-Host "Please rename or remove file and run command again." -ForegroundColor Yellow
+            exit
+        }
+
 
         # Define the URL of the mapping file hosted online
         $mappingFileUrl = "https://download.microsoft.com/download/e/3/e/e3e9faf2-f28b-490a-9ada-c6089a1fc5b0/Product%20names%20and%20service%20plan%20identifiers%20for%20licensing.csv"        
@@ -74,7 +132,7 @@ function Get-TenantInfo{
                 $assignedlicenses += $friendlyname
             }
             $liclist = $assignedlicenses.Product_Display_Name -join "+"
-            $officephone = $mailbox.BusinessPhones -join ","
+            $officephone = $mailbox.BusinessPhones -join ";"
             
             [PSCustomObject]@{
                 DisplayName = $mailbox.displayName
@@ -141,4 +199,4 @@ function Get-TenantInfo{
 
 
 }
-Get-TenantInfo -clientname Periodontal
+Get-SubscriptionInfo -clientname "Whitefort Capital"
