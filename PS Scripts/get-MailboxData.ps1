@@ -76,8 +76,7 @@ function Get-SubscriptionInfo{
         #delete file or exit script
         if($answer -eq 6){
             Remove-Item -Path $exportedFile -Force
-        }
-        else {
+        } else {
             Write-Host "Please rename or remove file and run command again." -ForegroundColor Yellow
             exit
         }
@@ -103,7 +102,7 @@ function Get-SubscriptionInfo{
         If(Get-Module -ListAvailable Microsoft.Graph.Beta.Identity.DirectoryManagement){
             Import-Module Microsoft.Graph.Beta.Identity.DirectoryManagement
         }else{
-            Write-Host "Required Microsoft Module not installed. Please run 'Microsoft.Graph.Beta.Identity.DirectoryManagement'" -ForegroundColor Red
+            Write-Host "Required Microsoft Module not installed. Please run Install-Module 'Microsoft.Graph.Beta.Identity.DirectoryManagement'" -ForegroundColor Red
             exit
         }
 
