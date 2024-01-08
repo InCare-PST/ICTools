@@ -76,7 +76,7 @@ function Get-SubscriptionInfo{
         #delete file or exit script
         if($answer -eq 6){
             Remove-Item -Path $exportedFile -Force
-        } else {
+        } elseif($answer -eq 7){
             Write-Host "Please rename or remove file and run command again." -ForegroundColor Yellow
             exit
         }
@@ -198,4 +198,4 @@ function Get-SubscriptionInfo{
 
 
 }
-Get-SubscriptionInfo -clientname "Whitefort Capital"
+Get-SubscriptionInfo -clientname "ASoID"
