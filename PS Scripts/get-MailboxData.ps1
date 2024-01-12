@@ -199,4 +199,4 @@ function Get-SubscriptionInfo{
 
 
 }
-Get-SubscriptionInfo -clientname "ASoID"
+Get-SubscriptionInfo -clientname "KGS Steel"
