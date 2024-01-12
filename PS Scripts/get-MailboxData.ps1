@@ -36,7 +36,7 @@ function Get-SubscriptionInfo{
 
         [string]$clientname = "",
 
-        [string]$scope = "User.Read.All,Organization.Read.All",
+        [string]$scope = "User.Read.All,Organization.Read.All,AuditLog.Read.All,Directory.Read.All",
 
         [string]$filename = "MappingFile.csv"
     )
@@ -120,7 +120,7 @@ function Get-SubscriptionInfo{
     process{
 
         # Step 2: Retrieve information for each mailbox
-        $mailboxes = Get-MgBetaUser -All
+        $mailboxes = Get-MgBetaUser -All -Property signinactivity
 
         # Step 3: Format and export the information
         $exportedData = foreach ($mailbox in $mailboxes) {
@@ -138,6 +138,7 @@ function Get-SubscriptionInfo{
                 FirstName = $mailbox.givenName
                 LastName = $mailbox.surname
                 Enabled = $mailbox.AccountEnabled
+                "Last Logon" = $mailbox.SignInActivity.LastSignInDateTime
                 "Sync Enabled" = $mailbox.OnPremisesSyncEnabled
                 UserType = $mailbox.userType
                 Licenses = $liclist  # Use the translated friendly names
