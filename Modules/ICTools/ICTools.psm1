@@ -1367,8 +1367,13 @@ function Get-SubscriptionInfo{
     process{
 
         # Step 2: Retrieve information for each mailbox
-        $mailboxes = Get-MgBetaUser -All -Property signinactivity
-
+        try {
+            $mailboxes = Get-MgBetaUser -All -Property signinactivity -ErrorAction Stop -ErrorVariable NoSignin
+        }
+        catch {
+            Write-Host "Unable to get Last Logon date. Most likely caused by a free level of Entra ID instead of Premium." -ForegroundColor Yellow
+            $mailboxes = Get-MGBetaUser -All
+        }
         # Step 3: Format and export the information
         $exportedData = foreach ($mailbox in $mailboxes) {
             $licenses = $mailbox.assignedlicenses.skuid

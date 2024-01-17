@@ -39,6 +39,7 @@ function Get-SubscriptionInfo{
         [string]$scope = "User.Read.All,Organization.Read.All,AuditLog.Read.All,Directory.Read.All",
 
         [string]$filename = "MappingFile.csv"
+
     )
 
     begin{
@@ -119,9 +120,20 @@ function Get-SubscriptionInfo{
 
     process{
 
-        # Step 2: Retrieve information for each mailbox
-        $mailboxes = Get-MgBetaUser -All -Property signinactivity
-
+        # Step 2: Retrieve information for each mailbox. Add LastLogon time if selected.
+        <#if($LastLogon){
+            $mailboxes = Get-MgBetaUser -All -Property signinactivity
+        }
+        else {
+            $mailboxes = Get-MGBetaUser -All
+        }#>
+        try {
+            $mailboxes = Get-MgBetaUser -All -Property signinactivity -ErrorAction Stop -ErrorVariable NoSignin
+        }
+        catch {
+            Write-Host "Unable to get Last Logon date. Most likely caused by a free level of Entra ID instead of Premium." -ForegroundColor Yellow
+            $mailboxes = Get-MGBetaUser -All
+        }
         # Step 3: Format and export the information
         $exportedData = foreach ($mailbox in $mailboxes) {
             $licenses = $mailbox.assignedlicenses.skuid
@@ -199,4 +211,4 @@ function Get-SubscriptionInfo{
 
 
 }
-Get-SubscriptionInfo -clientname "KGS Steel"
+Get-SubscriptionInfo -clientname "ASID"
