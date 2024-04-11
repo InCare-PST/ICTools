@@ -1,7 +1,10 @@
 #Let's work around the 1001 authentication issue
 #Justin Gallups
+
 param(
-[switch]$work,$personal,$cleanup
+[switch]$work,
+[switch]$personal,
+[switch]$cleanup
 )
 
 #Microsoft Fix
@@ -13,8 +16,9 @@ if([bool]$personal){
 if (-not (Get-AppxPackage Microsoft.Windows.CloudExperienceHost)) { Add-AppxPackage -Register "$env:windir\SystemApps\Microsoft.Windows.CloudExperienceHost_cw5n1h2txyewy\Appxmanifest.xml" -DisableDevelopmentMode -ForceApplicationShutdown } 
 }
 
+#Cleanup
 if([bool]$cleanup){
-    stop-process -Force "Microsoft.AAD.BrokerPlugin.exe" -ErrorAction SilentlyContinue
-    Remove-Item -Path "$($env:localappdata)\Packages\Microsoft.AAD.BrokerPlugin_cw5n1h2txyewy" -Recurse -Force -Confirm
-    
+Get-Process -ProcessName *AAD* | stop-process -ErrorAction SilentlyContinue -Force
+Remove-Item -Path "$($env:localappdata)\Packages\Microsoft.AAD.BrokerPlugin_cw5n1h2txyewy" -Recurse -Force -Confirm
 }
+
