@@ -1,7 +1,10 @@
-Write-Host "Finding Azure Active Directory Accounts..."
+Write-Host "Finding Azure Active Directory Accounts..." -ForegroundColor Green
+[System.Reflection.Assembly]::LoadWithPartialName('Microsoft.VisualBasic') | Out-Null
+$folder = [Microsoft.VisualBasic.Interaction]::InputBox("Choose Report Folder", "Report Folder", "c:\temp")
+
 $Users = Get-MsolUser -All | Where-Object {($_.UserType -ne "Guest") -and ($_.IsLicensed -eq "True")}
 $Report = [System.Collections.Generic.List[Object]]::new() # Create output file
-Write-Host "Processing" $Users.Count "accounts..." 
+Write-Host "Processing" -ForegroundColor Blue -NoNewline; write-host " $($Users.Count) " -ForegroundColor Green -NoNewline; write-host "accounts..." -ForegroundColor Blue
 ForEach ($User in $Users) {
 
     $MFADefaultMethod = ($User.StrongAuthenticationMethods | Where-Object { $_.IsDefault -eq "True" }).MethodType
@@ -42,6 +45,6 @@ ForEach ($User in $Users) {
     $Report.Add($ReportLine)
 }
 
-Write-Host "Report is in c:\temp\MFAUsers.csv"
+Write-Host "Report located: " -ForegroundColor Blue -NoNewline; write-host "$($folder)\MFAUsers.csv" -ForegroundColor Green
 $Report | Select-Object UserPrincipalName, DisplayName, MFAState, MFADefaultMethod, MFAPhoneNumber, PrimarySMTP, Aliases | Sort-Object UserPrincipalName | Out-GridView
-$Report | Sort-Object UserPrincipalName | Export-CSV -Encoding UTF8 -NoTypeInformation c:\temp\MFAUsers.csv
+$Report | Sort-Object UserPrincipalName | Export-CSV -Encoding UTF8 -NoTypeInformation $($folder)\MFAUsers.csv
