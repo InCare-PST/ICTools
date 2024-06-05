@@ -15,9 +15,9 @@ $alpha = @()
 $bravo = @()
 
 if($UmbrellaOnly){
-  $alpha =  (Get-childitem "HKLM:\SOFTWARE\Microsoft\Windows NT\CurrentVersion\NetworkList\Profiles" | Get-ItemProperty -Name ProfileName | Where ProfileName -match "Umbrella").pspath
+  $alpha =  (Get-childitem "HKLM:\SOFTWARE\Microsoft\Windows NT\CurrentVersion\NetworkList\Profiles" | Get-ItemProperty -Name ProfileName | Where-Object ProfileName -match "Umbrella").pspath
 }else{
-  $alpha = (Get-childitem "HKLM:\SOFTWARE\Microsoft\Windows NT\CurrentVersion\NetworkList\Profiles" | Get-ItemProperty -Name Category | Where Category -eq 0).pspath
+  $alpha = (Get-childitem "HKLM:\SOFTWARE\Microsoft\Windows NT\CurrentVersion\NetworkList\Profiles" | Get-ItemProperty -Name Category | Where-Object Category -eq 0).pspath
 }
 if([bool]$alpha){$bravo += $alpha.trim("Microsoft.PowerShell.Core\")
 }else{

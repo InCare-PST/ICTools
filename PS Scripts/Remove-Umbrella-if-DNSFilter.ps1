@@ -1,3 +1,15 @@
+<#
+.SYNOPSIS 
+Check if both DNS Filter and Umbrella are installed
+.DESCRIPTION 
+Removes Umbrella and Restarts DNS filter
+.PARAMETER apply
+Removes Umbrella and Restarts DNS filter
+.PARAMETER export
+
+.EXAMPLE
+.EXAMPLE
+#>
 IF([BOOL](Get-Service -DisplayName "DNS Agent" -ErrorAction SilentlyContinue)){
     IF([BOOL](Get-Service -DisplayName "Umbrella*" -ErrorAction SilentlyContinue)){
         write-host -ForegroundColor Yellow "Umbrella installed: removing now"
