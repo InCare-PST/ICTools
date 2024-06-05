@@ -1,4 +1,3 @@
-Write-Host "Finding Azure Active Directory Accounts..."
 
 # Connect to Microsoft Graph
 [System.Reflection.Assembly]::LoadWithPartialName('Microsoft.VisualBasic') | Out-Null
@@ -6,45 +5,56 @@ $scope = [Microsoft.VisualBasic.Interaction]::InputBox("Enter Scope Requested", 
 #$scope = "User.Read.All,Organization.Read.All,AuditLog.Read.All,Directory.Read.All"
 Connect-MgGraph -Scopes $scope
 
-# Get all users excluding guest users
-#$Users = Get-MgUser -Filter "userType ne 'Guest' and accountEnabled eq true" -Property "id, displayName, userPrincipalName, strongAuthenticationMethods, proxyAddresses, strongAuthenticationUserDetails, strongAuthenticationRequirements" -All
-$Users = Get-MgUser  -Property "id, displayName, userPrincipalName, strongAuthenticationMethods, proxyAddresses, strongAuthenticationUserDetails, strongAuthenticationRequirements" -All
+
+$Users = Get-MgUser  -All
 
 $Report = [System.Collections.Generic.List[Object]]::new() # Create output file
-Write-Host "Processing" $Users.Count "accounts..."
 
 ForEach ($User in $Users) {
-    $MFADefaultMethod = ($User.StrongAuthenticationMethods | Where-Object { $_.IsDefault -eq "True" }).MethodType
-    $MFAPhoneNumber = $User.StrongAuthenticationUserDetails.PhoneNumber
-    $PrimarySMTP = $User.ProxyAddresses | Where-Object { $_ -clike "SMTP:*" } | ForEach-Object { $_ -replace "SMTP:", "" }
-    $Aliases = $User.ProxyAddresses | Where-Object { $_ -clike "smtp:*" } | ForEach-Object { $_ -replace "smtp:", "" }
+    try {
+        # Retrieve the user's authentication methods
+        $AuthMethods = Invoke-MgGraphRequest -Uri "https://graph.microsoft.com/v1.0/users/$($User.Id)/authentication/methods"
 
-    $MFAState = if ($User.StrongAuthenticationRequirements) {
-        $User.StrongAuthenticationRequirements.State
-    } else {
-        'Disabled'
-    }
+        $MFADefaultMethod = $null
+        $MFAPhoneNumber = $null
 
-    $MFADefaultMethod = switch ($MFADefaultMethod) {
-        "OneWaySMS" { "Text code authentication phone" }
-        "TwoWayVoiceMobile" { "Call authentication phone" }
-        "TwoWayVoiceOffice" { "Call office phone" }
-        "PhoneAppOTP" { "Authenticator app or hardware token" }
-        "PhoneAppNotification" { "Microsoft authenticator app" }
-        default { "Not enabled" }
-    }
-  
-    $ReportLine = [PSCustomObject] @{
-        UserPrincipalName = $User.UserPrincipalName
-        DisplayName       = $User.DisplayName
-        MFAState          = $MFAState
-        MFADefaultMethod  = $MFADefaultMethod
-        MFAPhoneNumber    = $MFAPhoneNumber
-        PrimarySMTP       = ($PrimarySMTP -join ',')
-        Aliases           = ($Aliases -join ',')
-    }
+        ForEach ($Method in $AuthMethods.value) {
+            Switch ($Method["@odata.type"]) {
+                "#microsoft.graph.phoneAuthenticationMethod" {
+                    $MFADefaultMethod = "Phone"
+                    $MFAPhoneNumber = $Method.phoneNumber
+                }
+                "#microsoft.graph.softwareOathAuthenticationMethod" {
+                    $MFADefaultMethod = "Software OATH"
+                }
+                "#microsoft.graph.fido2AuthenticationMethod" {
+                    $MFADefaultMethod = "FIDO2"
+                }
+                "#microsoft.graph.microsoftAuthenticatorAuthenticationMethod" {
+                    $MFADefaultMethod = "Microsoft Authenticator"
+                }
+            }
+        }
+
+        $PrimarySMTP = $User.ProxyAddresses | Where-Object { $_ -clike "SMTP:*" } | ForEach-Object { $_ -replace "SMTP:", "" }
+        $Aliases = $User.ProxyAddresses | Where-Object { $_ -clike "smtp:*" } | ForEach-Object { $_ -replace "smtp:", "" }
+
+        $MFAState = if ($MFADefaultMethod) { 'Enabled' } else { 'Disabled' }
+
+        $ReportLine = [PSCustomObject] @{
+            UserPrincipalName = $User.UserPrincipalName
+            DisplayName       = $User.DisplayName
+            MFAState          = $MFAState
+            MFADefaultMethod  = $MFADefaultMethod
+            MFAPhoneNumber    = $MFAPhoneNumber
+            PrimarySMTP       = ($PrimarySMTP -join ',')
+            Aliases           = ($Aliases -join ',')
+        }
                  
-    $Report.Add($ReportLine)
+        $Report.Add($ReportLine)
+    } catch {
+        Write-Host "Failed to retrieve authentication methods for user: $($User.UserPrincipalName)" -ForegroundColor Red
+    }
 }
 
 Write-Host "Report is in c:\temp\MFAUsers.csv"
