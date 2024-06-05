@@ -17,8 +17,9 @@ if (-not (Get-AppxPackage Microsoft.Windows.CloudExperienceHost)) { Add-AppxPack
 }
 
 #Cleanup
-if([bool]$cleanup){
+# if([bool]$cleanup)
+{
 Get-Process -ProcessName *AAD* | stop-process -ErrorAction SilentlyContinue -Force
-Remove-Item -Path "$($env:localappdata)\Packages\Microsoft.AAD.BrokerPlugin_cw5n1h2txyewy" -Recurse -Force -Confirm
+Remove-Item -Path "$($env:localappdata)\Packages\Microsoft.AAD.BrokerPlugin_cw5n1h2txyewy" -Recurse -Force
 }
 
