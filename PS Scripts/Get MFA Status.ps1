@@ -47,4 +47,4 @@ ForEach ($User in $Users) {
 
 Write-Host "Report located: " -ForegroundColor Blue -NoNewline; write-host "$($folder)\MFAUsers.csv" -ForegroundColor Green
 $Report | Select-Object UserPrincipalName, DisplayName, MFAState, MFADefaultMethod, MFAPhoneNumber, PrimarySMTP, Aliases | Sort-Object UserPrincipalName | Out-GridView
-$Report | Sort-Object UserPrincipalName | Export-CSV -Encoding UTF8 -NoTypeInformation $($folder)\MFAUsers.csv
+$Report | Sort-Object UserPrincipalName | Export-CSV -Encoding UTF8 -NoTypeInformation -path "$($folder)\MFAUsers.csv"
