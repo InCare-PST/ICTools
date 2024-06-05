@@ -9,8 +9,8 @@ ForEach ($User in $Users) {
     $PrimarySMTP = $User.ProxyAddresses | Where-Object { $_ -clike "SMTP*" } | ForEach-Object { $_ -replace "SMTP:", "" }
     $Aliases = $User.ProxyAddresses | Where-Object { $_ -clike "smtp*" } | ForEach-Object { $_ -replace "smtp:", "" }
 
-    If ($User.StrongAuthenticationRequirements) {
-        $MFAState = $User.StrongAuthenticationRequirements.State
+    If ([bool]$User.StrongAuthenticationRequirements) {
+        $MFAState = 'Enabled'
     }
     Else {
         $MFAState = 'Disabled'
