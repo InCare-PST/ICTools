@@ -1,10 +1,14 @@
 Write-Host "Finding Azure Active Directory Accounts..."
 
 # Connect to Microsoft Graph
-Connect-MgGraph -Scopes "User.Read.All"
+[System.Reflection.Assembly]::LoadWithPartialName('Microsoft.VisualBasic') | Out-Null
+$scope = [Microsoft.VisualBasic.Interaction]::InputBox("Enter Scope Requested", "Scope", "User.Read.All,Organization.Read.All,AuditLog.Read.All,Directory.Read.All")
+#$scope = "User.Read.All,Organization.Read.All,AuditLog.Read.All,Directory.Read.All"
+Connect-MgGraph -Scopes $scope
 
 # Get all users excluding guest users
-$Users = Get-MgUser -Filter "userType ne 'Guest' and accountEnabled eq true" -Property "id, displayName, userPrincipalName, strongAuthenticationMethods, proxyAddresses, strongAuthenticationUserDetails, strongAuthenticationRequirements" -All
+#$Users = Get-MgUser -Filter "userType ne 'Guest' and accountEnabled eq true" -Property "id, displayName, userPrincipalName, strongAuthenticationMethods, proxyAddresses, strongAuthenticationUserDetails, strongAuthenticationRequirements" -All
+$Users = Get-MgUser  -Property "id, displayName, userPrincipalName, strongAuthenticationMethods, proxyAddresses, strongAuthenticationUserDetails, strongAuthenticationRequirements" -All
 
 $Report = [System.Collections.Generic.List[Object]]::new() # Create output file
 Write-Host "Processing" $Users.Count "accounts..."
