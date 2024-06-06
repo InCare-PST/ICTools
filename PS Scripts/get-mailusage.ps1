@@ -17,6 +17,7 @@ $exportedusage = foreach($user in $usageimport){
         "Created Date" = $user."Created Date"
         "Is Deleted" = $user."Is Deleted"
         "Deleted Date" = $user."Deleted Date"
+        "Recipient Type" = $user."Recipient Type"
 
     }
 }
