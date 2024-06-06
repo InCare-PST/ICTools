@@ -1283,7 +1283,7 @@ function Get-SubscriptionInfo{
 
         [string]$clientname = "",
 
-        [string]$scope = "User.Read.All,Organization.Read.All,AuditLog.Read.All,Directory.Read.All",
+        [string]$scope = "User.Read.All,Organization.Read.All,AuditLog.Read.All,Directory.Read.All,Reports.Read.All",
 
         [string]$filename = "MappingFile.csv"
     )
