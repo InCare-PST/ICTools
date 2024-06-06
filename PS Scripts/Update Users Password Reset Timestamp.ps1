@@ -1,5 +1,5 @@
 #Specific User
-Get-ADUser cvaughan -Properties * | select pwdlastset
+Get-ADUser cvaughan -Properties * | Select-Object pwdlastset
  get-aduser cvaughan | Set-ADUser -Replace @{pwdlastset = -1}
 
 #Specific list of users
