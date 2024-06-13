@@ -1245,6 +1245,7 @@ Function Get-ServiceAccounts {
     
     }
 }
+
 function Find-Folders {
     [Reflection.Assembly]::LoadWithPartialName("System.Windows.Forms") | Out-Null
     [System.Windows.Forms.Application]::EnableVisualStyles()
@@ -1283,7 +1284,7 @@ function Get-SubscriptionInfo{
 
         [string]$clientname = "",
 
-        [string]$scope = "User.Read.All,Organization.Read.All,AuditLog.Read.All,Directory.Read.All",
+        [string]$scope = "User.Read.All,Organization.Read.All,AuditLog.Read.All,Directory.Read.All,Reports.Read.All",
 
         [string]$filename = "MappingFile.csv"
     )
@@ -1302,6 +1303,9 @@ function Get-SubscriptionInfo{
 
         #create filename
         $xlsxfilename = $date.tostring("dd-MM-yyyy") + " " + $clientname + "`.xlsx"
+
+        #create temp file path for usage report csv
+        $tempusagefile = $path + "`\" + "temporaryexportfile.csv"
 
         # create full path for export files
         $exportedFile = $path + "`\" + $xlsxfilename
@@ -1334,18 +1338,15 @@ function Get-SubscriptionInfo{
     
         # Download the mapping file and import data to variable
         $planMapping = Invoke-RestMethod -Uri $mappingFileUrl | ConvertFrom-Csv -Delimiter ","
-
-        # Load the mapping from the downloaded CSV file
-        # $planMapping = Import-Csv $fullmappingfile
        
         If(Get-Module -ListAvailable Microsoft.Graph.Beta.Users){
             Import-Module Microsoft.Graph.Beta.Users
         }else{
             Write-Host "Required Microsoft Module not installed. Please run 'Install-Module Microsoft.Graph.Beta'" -ForegroundColor Red
             exit
-        }
+        }    
     
-    
+        # Check to see if neccessary modules have been installed.
         If(Get-Module -ListAvailable Microsoft.Graph.Beta.Identity.DirectoryManagement){
             Import-Module Microsoft.Graph.Beta.Identity.DirectoryManagement
         }else{
@@ -1366,7 +1367,7 @@ function Get-SubscriptionInfo{
 
     process{
 
-        # Step 2: Retrieve information for each mailbox
+        # Retrieve information for each mailbox
         try {
             $mailboxes = Get-MgBetaUser -All -Property signinactivity -ErrorAction Stop -ErrorVariable NoSignin
         }
@@ -1374,7 +1375,13 @@ function Get-SubscriptionInfo{
             Write-Host "Unable to get Last Logon date. Most likely caused by a free level of Entra ID instead of Premium." -ForegroundColor Yellow
             $mailboxes = Get-MGBetaUser -All
         }
-        # Step 3: Format and export the information
+        # Retrieve usage report information
+        Get-MgBetaReportMailboxUsageDetail -Period D7 -OutFile $tempusagefile
+        # Import the data we just exported because someone at Microsoft is an idiot
+        $usageimport = Import-Csv -Path $tempusagefile
+        # Remove the temporary file we just created beause the command forces us to export it.
+        Remove-Item -Path $tempusagefile -Force
+        # Format and export the information
         $exportedData = foreach ($mailbox in $mailboxes) {
             $licenses = $mailbox.assignedlicenses.skuid
             $assignedlicenses = @()
@@ -1415,16 +1422,11 @@ function Get-SubscriptionInfo{
         #find number of licensed accounts and set starting row for subscriptions
         $startingrow = $licensedAccounts.count + 5
 
-        # Export the data to a CSV file
-        # $exportedData | Export-Csv -Path $mailboxexport -NoTypeInformation
-
         $subskus = Get-MgBetaSubscribedSku -All
 
         $subscribtionexport = foreach($subsku in $subskus){
             $basesku = $subsku.skuid
             $friendlyname = $planMapping | Where-Object {$_.GUID -eq $basesku} | Select-Object -First 1 | Select-Object -ExpandProperty Product_Display_Name
-
-            #$friendlyname = $friendlyname.Product_Display_Name
 
             [PSCustomObject]@{
                 License = $friendlyname
@@ -1434,14 +1436,32 @@ function Get-SubscriptionInfo{
                 Available = $subsku.prepaidunits.enabled - $subsku.consumedUnits
             }
         }
-        #$subscribtionexport | Where-Object {$_.License -ne $null} |  export-csv -Path $licenseexport -NoTypeInformation -Force
-
+        # Format Usage Data
+        $exportedusage = foreach($user in $usageimport){
+            $gibibyte = $user."Storage Used (Byte)"/[math]::Pow(1024, 3)
+            $mebibyte = $user."Storage Used (Byte)"/[math]::Pow(1024, 2)
+        
+            [PSCustomObject]@{
+                "Display Name" = $user."Display Name"
+                "User Principal Name" = $user."User Principal Name"
+                "Storage Used(MebiByte)" = $mebibyte
+                "Storage Used(GibiByte)" = $gibibyte
+                "Has Archive" = $user."Has Archive"
+                "Created Date" = $user."Created Date"
+                "Is Deleted" = $user."Is Deleted"
+                "Deleted Date" = $user."Deleted Date"
+                "Recipient Type" = $user."Recipient Type"
+        
+            }
+        }
         #Export to Excel file 
         $licensedAccounts | Export-Excel $exportedFile -AutoSize -TableName Licensed -TableStyle Medium2 -WorksheetName "O365 Licensed Accounts"
 
         $unlicensedAccounts | Export-Excel $exportedFile -AutoSize -TableName UnLicensed -TableStyle Medium2 -WorksheetName "O365 UnLicensed Accounts"
 
         $subscribtionexport | Export-Excel $exportedFile -AutoSize -StartRow $startingrow -TableName Subscriptions -TableStyle Medium2 -WorksheetName "O365 Licensed Accounts" 
+
+        $exportedusage | Export-Excel -path $exportedFile -AutoSize -TableName Usage -TableStyle Medium2 -WorksheetName "Mailbox Usage Report"
     }
 
     end{
