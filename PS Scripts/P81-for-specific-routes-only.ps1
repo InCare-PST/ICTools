@@ -1,7 +1,24 @@
+#Allows addition of FQDN without updating script
+param (
+  [switch]$Add
+)
+
 #Requires -RunAsAdministrator
 
 # List of FQDNs
-$FQDNs = @("vcloud.thrivenextgen.com", "vsa05.thrivenextgen.com", "vsa06.thrivenextgen.com", "vsa07.thrivenextgen.com", "vsa08.thrivenextgen.com", "vsa09.thrivenextgen.com","vsa10.thrivenextgen.com")
+[System.Reflection.Assembly]::LoadWithPartialName('Microsoft.VisualBasic') | Out-Null
+$FQDNsPre = @("vcloud.thrivenextgen.com", "vsa05.thrivenextgen.com", "vsa06.thrivenextgen.com", "vsa07.thrivenextgen.com", "vsa08.thrivenextgen.com", "vsa09.thrivenextgen.com","vsa10.thrivenextgen.com")
+if($Add){$FQDNsAdd = [Microsoft.VisualBasic.Interaction]::InputBox("Enter Additional FQDNs Requested", "FQDNs", "")}
+
+$FQDNs = @()
+$FQDNs += $FQDNsPre
+if([BOOL]$FQDNsAdd){$FQDNs += $FQDNsAdd}
+
+#[System.Reflection.Assembly]::LoadWithPartialName('Microsoft.VisualBasic') | Out-Null
+#[Microsoft.VisualBasic.Interaction]::Choose( "yes", "no")
+
+
+#$FQDNs = @("vcloud.thrivenextgen.com", "vsa05.thrivenextgen.com", "vsa06.thrivenextgen.com", "vsa07.thrivenextgen.com", "vsa08.thrivenextgen.com", "vsa09.thrivenextgen.com","vsa10.thrivenextgen.com")
 
 function Exit-WithDelay {
     $DelayInSeconds = 5
