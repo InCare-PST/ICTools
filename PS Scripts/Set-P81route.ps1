@@ -22,7 +22,7 @@ functiion Set-P81routes{
         }
 
         $P81_Address = $P81_Interface | Get-NetIPAddress | Select-Object -ExpandProperty IPAddress
-        if (@($P81_Address).Count -eq 0) {
+        if ($P81_Address.Count -eq 0) {
             Write-Host "Could not get local IP of P81 adapter."
             Exit-WithDelay
         } else {
@@ -43,7 +43,6 @@ functiion Set-P81routes{
                 "vsa02.thrivenetworks.com",
                 "vsa03.thrivenextgen.com",
                 "vsa04.thrivenetworks.com",
-                "typo",
                 "vsa05.thrivenextgen.com",
                 "vsa06.thrivenextgen.com",
                 "vsa07.thrivenextgen.com",
