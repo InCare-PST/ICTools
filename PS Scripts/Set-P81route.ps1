@@ -24,14 +24,10 @@ functiion Set-P81routes{
         $P81_Address = $P81_Interface | Get-NetIPAddress | Select-Object -ExpandProperty IPAddress
         if ($P81_Address.Count -eq 0) {
             Write-Host "Could not get local IP of P81 adapter."
-            Exit-WithDelay
+            Return
         } else {
             Write-Host "P81 adapter IP found as $P81_Address"
         }
-
-
-
-
 #Set the list of DNS names to route through P81
         if($import){
             $FQDNS = Get-Content -Path $path
@@ -54,16 +50,22 @@ functiion Set-P81routes{
         
         $IPs = foreach($FQDN in $FQDNS){
             try {
-                Resolve-DnsName $FQDN -Type A -QuickTimeout -DnsOnly -ErrorAction Stop | Where-Object {$_.IP4Address -ne $null} | Select-Object IP4Address
+                $IP = Resolve-DnsName $FQDN -Type A -QuickTimeout -DnsOnly -ErrorAction Stop | Where-Object {$_.IP4Address -ne $null} | Select-Object IP4Address
             }
             catch {
                 Write-Host "Failed to resolve host $FQDN"
             }
+            $FQDN_temp = @{
+                Name = $FQDN,
+                IP = $IP+"/32"
+            }
+            $tempobj = New-Object -TypeName psobject -Property $FQDN_temp
+            $tempobj | Select-Object Name, IP
         }
 
-        $DestIPs = foreach($IP in $IPs){
+        <#$DestIPs = foreach($IP in $IPs){
             $IP.IP4Address+"/32"
-        }
+        }#>
 
     }
     process{
