@@ -6,7 +6,9 @@ functiion Set-P81routes{
 
         [switch]$import = $false,
 
-        [string]$path
+        [string]$path,
+
+        [string]$add
 
     )
     
@@ -92,8 +94,21 @@ functiion Set-P81routes{
     }
     process{
         #Removing Current routes
-        $P81_Routes | Remove-NetRoute -Confirm:$false -ErrorAction SilentlyContinue
-
+        try {
+            try$P81_Routes | Remove-NetRoute -Confirm:$false -ErrorAction Stop
+        }
+        catch {
+            Write-Host -ForegroundColor Red "Could not remove P81 global routes. Exiting script."
+            Return
+        }
+        foreach($IP in $IPs){
+            try {
+                New-NetRoute -DestinationPrefix $IP.ip -InterfaceIndex $P81_Interface.ifIndex -RouteMetric 10 -ErrorAction stop
+            }
+            catch {
+                Write-Host -ForegroundColor Yellow "Could not add route for $($IP.Name) with IP Address of $($IP.IP)"
+            } 
+        }
 
     }
     End{
