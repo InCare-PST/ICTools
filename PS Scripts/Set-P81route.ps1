@@ -28,7 +28,7 @@ functiion Set-P81routes{
         } else {
             Write-Host "P81 adapter IP found as $P81_Address"
         }
-#Set the list of DNS names to route through P81
+        #Set the list of DNS names to route through P81
         if($import){
             $FQDNS = Get-Content -Path $path
         }
@@ -50,23 +50,30 @@ functiion Set-P81routes{
         
         $IPs = foreach($FQDN in $FQDNS){
             try {
-                $IP = Resolve-DnsName $FQDN -Type A -QuickTimeout -DnsOnly -ErrorAction Stop | Where-Object {$_.IP4Address -ne $null} | Select-Object IP4Address
+                $IP = Resolve-DnsName $FQDN -Type A -QuickTimeout -DnsOnly -ErrorAction Stop | Where-Object {$_.IP4Address -ne $null} | Select-Object -ExpandProperty IP4Address
             }
             catch {
                 Write-Host "Failed to resolve host $FQDN"
             }
-            $FQDN_temp = @{
-                Name = $FQDN,
-                IP = $IP+"/32"
+            if ($IP.count -gt 1) {
+                foreach ($oneIP in $IP) {
+                    $FQDN_temp = @{
+                        Name = $FQDN
+                        IP = $oneIP+"/32"
+                    }
+                    $tempobj = New-Object -TypeName psobject -Property $FQDN_temp
+                    $tempobj | Select-Object Name, IP        
+                }
             }
-            $tempobj = New-Object -TypeName psobject -Property $FQDN_temp
-            $tempobj | Select-Object Name, IP
+            else {
+                $FQDN_temp = @{
+                    Name = $FQDN
+                    IP = $IP+"/32"
+                } 
+                $tempobj = New-Object -TypeName psobject -Property $FQDN_temp
+                $tempobj | Select-Object Name, IP       
+            }
         }
-
-        <#$DestIPs = foreach($IP in $IPs){
-            $IP.IP4Address+"/32"
-        }#>
-
     }
     process{
 
