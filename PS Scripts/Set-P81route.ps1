@@ -28,6 +28,21 @@ functiion Set-P81routes{
         } else {
             Write-Host "P81 adapter IP found as $P81_Address"
         }
+        #Check current P81 routing
+        $P81_Routes = Get-NetRoute -InterfaceIndex $P81_Interface.ifIndex | Where-Object {$_.DestinationPrefix -notmatch $P81_Address}
+        #If it looks like the script has already been run, verify that the user wants to run it again.
+        if ($P81_Routes.count -ne 6) {
+            Add-Type -AssemblyName PresentationCore,PresentationFramework
+            $ButtonType = [System.Windows.MessageBoxButton]::YesNo
+            $MessageboxTitle = “Confirm P81 Route Renewal”
+            $Messageboxbody = “It looks like you might have run this script already, would you like to run it again?”
+            $MessageIcon = [System.Windows.MessageBoxImage]::Warning
+            $answer = [System.Windows.MessageBox]::Show($Messageboxbody,$MessageboxTitle,$ButtonType,$messageicon)
+            if ($answer -eq "No") {
+                Write-Host -ForegroundColor Red "Exiting Script"
+                Return
+            }
+        }
         #Set the list of DNS names to route through P81
         if($import){
             $FQDNS = Get-Content -Path $path
@@ -47,7 +62,7 @@ functiion Set-P81routes{
                 "vsa10.thrivenextgen.com"
             )
         }
-        
+        # Resolve the FQDNs to IP addresses for later use
         $IPs = foreach($FQDN in $FQDNS){
             try {
                 $IP = Resolve-DnsName $FQDN -Type A -QuickTimeout -DnsOnly -ErrorAction Stop | Where-Object {$_.IP4Address -ne $null} | Select-Object -ExpandProperty IP4Address
@@ -76,6 +91,9 @@ functiion Set-P81routes{
         }
     }
     process{
+        #Removing Current routes
+        $P81_Routes | Remove-NetRoute -Confirm:$false -ErrorAction SilentlyContinue
+
 
     }
     End{
