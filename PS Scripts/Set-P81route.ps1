@@ -2,15 +2,15 @@ functiion Set-P81routes{
     [CmdletBinding(SupportsShouldProcess = $True)]
     param (
 
-        [string]$FQDNS,
-
         [switch]$import = $false,
 
         [string]$path,
 
         [string]$add,
 
-        [string]$append
+        [string]$append,
+
+        [switch]$list = $false
 
     )
     
@@ -30,7 +30,7 @@ functiion Set-P81routes{
             Write-Host "Could not get local IP of P81 adapter."
             Return
         } else {
-            Write-Host "P81 adapter IP found as $P81_Address"
+            Write-Host "P81 adapter IP found as $P81_Address" -ForegroundColor Green
         }
         #Check current P81 routing
         $P81_Routes = Get-NetRoute -InterfaceIndex $P81_Interface.ifIndex | Where-Object {$_.DestinationPrefix -notmatch $P81_Address}
