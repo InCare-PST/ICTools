@@ -18,7 +18,7 @@ functiion Set-P81routes{
         $P81_Interface = Get-NetAdapter -Name "P81*"
         #Check that only 1 interface was found
         if ($P81_Interface.Count -eq 0) {
-            Write-Host "No P81 adapter found."
+            Write-Host "No P81 adapter found. Are you currently connected?" -ForegroundColor Yellow
             Return
         } elseif ($P81_Interface.count -gt 1) {
             Write-Host "Too many P81 Adapters found. $($P81_Interface.count) found."
@@ -117,15 +117,15 @@ functiion Set-P81routes{
             DifferenceObject = ($New_P81_Routes.DestinationPrefix)
         }
 
-        $compare = Compare-Object $ref_objects
+        $compare = Compare-Object @ref_objects
 
         if($compare.count -ne 0){
             foreach ($item in $compare) {
                 $error_item = $IPs | Where-Object {$_.IP -match $item.InputObject}
                 Write-Host "Route for $($error_item.Name) with IP Address of $($error_item.IP) could not be added." -ForegroundColor Red
-            }else {
-                Write-Host "All routes were successfully added." -ForegroundColor Green
             }
+        }else{
+            Write-Host "All routes were successfully added." -ForegroundColor Green
         }
     }
     End{
