@@ -27,16 +27,16 @@ function Set-P81routes{
         #Check that only 1 interface was found
         if ($P81_Interface.Count -eq 0) {
             Write-Host "No P81 adapter found. Are you currently connected?" -ForegroundColor Yellow
-            Return
+            Break
         } elseif ($P81_Interface.count -gt 1) {
             Write-Host "Too many P81 Adapters found. $($P81_Interface.count) found."
-            Return
+            Break
         }
         #Find the P81 Interface Address
         $P81_Address = $P81_Interface | Get-NetIPAddress | Select-Object -ExpandProperty IPAddress
         if ($P81_Address.Count -eq 0) {
             Write-Host "Could not get local IP of P81 adapter."
-            Return
+            Break
         } else {
             Write-Host "P81 adapter IP found as $P81_Address" -ForegroundColor Green
         }
@@ -140,3 +140,4 @@ function Set-P81routes{
 
     }
 }
+Set-P81routes
