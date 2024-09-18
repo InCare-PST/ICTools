@@ -1,16 +1,24 @@
-functiion Set-P81routes{
-    [CmdletBinding(SupportsShouldProcess = $True)]
+function Set-P81routes{
+    [CmdletBinding(DefaultParameterSetName="default",SupportsShouldProcess = $True)]
     param (
-
+        [Parameter(ParameterSetName='import')]
         [switch]$import = $false,
 
+        [Parameter(ParameterSetName='export')]
+        [switch]$export = $false,
+
+        [Parameter(Mandatory,ParameterSetName='import')]
+        [Parameter(Mandatory,ParameterSetName='export')]
         [string]$path,
 
-        [string]$add,
+        [Parameter(ValueFromPipeline=$True)]
+        [string[]]$add,
 
-        [string]$append,
+        [string[]]$append,
 
-        [switch]$list = $false
+        [switch]$list = $false,
+
+        [switch]$list_only = $false
 
     )
     
