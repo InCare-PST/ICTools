@@ -1,4 +1,5 @@
 function Set-P81routes{
+    #Requires -RunAsAdministrator
     [CmdletBinding(DefaultParameterSetName="default",SupportsShouldProcess = $True)]
     param (
         
@@ -44,7 +45,7 @@ function Set-P81routes{
         #Check current P81 routing
         $P81_Routes = Get-NetRoute -InterfaceIndex $P81_Interface.ifIndex | Where-Object {$_.DestinationPrefix -notmatch $P81_Address}
         #If it looks like the script has already been run, verify that the user wants to run it again.
-        if ($P81_Routes.count -ne 3) {
+        if ($P81_Routes.count -ne 3 -and !$list_only) {
             Add-Type -AssemblyName PresentationCore,PresentationFramework
             $ButtonType = [System.Windows.MessageBoxButton]::YesNo
             $MessageboxTitle = “Confirm P81 Route Renewal”
@@ -53,7 +54,7 @@ function Set-P81routes{
             $answer = [System.Windows.MessageBox]::Show($Messageboxbody,$MessageboxTitle,$ButtonType,$messageicon)
             if ($answer -eq "No") {
                 Write-Host -ForegroundColor Red "Exiting Script"
-                Return
+                Break
             }
         }
         #Set the list of DNS names to route through P81
@@ -77,9 +78,8 @@ function Set-P81routes{
         # Resolve the FQDNs to IP addresses for later use
         $IPs = foreach($FQDN in $FQDNS){
             try {
-                $IP = Resolve-DnsName $FQDN -Type A -QuickTimeout -DnsOnly -ErrorAction Stop | Where-Object {$_.IP4Address -ne $null} | Select-Object -ExpandProperty IP4Address
-            }
-            catch {
+                $IP = Resolve-DnsName $FQDN -Type A -QuickTimeout -DnsOnly -ErrorAction Stop | Where-Object {$null -ne $_.IP4Address} | Select-Object -ExpandProperty IP4Address
+            }catch {
                 Write-Host "Failed to resolve host $FQDN"
             }
             if ($IP.count -gt 1) {
@@ -101,15 +101,25 @@ function Set-P81routes{
                 $tempobj | Select-Object Name, IP       
             }
         }
+
+        if ($list -or $list_only) {
+            Write-Host "The following destinations will route through the P81 interface." -ForegroundColor Green
+            $IPs | Select-Object @{Name='Web Address';Expression={$_.Name}}, @{Name='Resolved Address';Expression={$_.IP}} | Format-Table -AutoSize
+            if ($list_only) {
+                break
+            }
+        }
     }
     process{
         #Removing Current routes
-        try {
-            $P81_Routes | Remove-NetRoute -Confirm:$false -ErrorAction Stop
-        }catch{
-            Write-Host -ForegroundColor Red "Could not remove P81 global routes. Exiting script."
-            Return
+        $P81_Routes | Remove-NetRoute -Confirm:$false -ErrorAction SilentlyContinue
+        #check to make sure all routes were removed. 
+        $P81_Remaining_Routes = Get-NetRoute -InterfaceIndex $P81_Interface.ifIndex | Where-Object {$_.DestinationPrefix -notmatch $P81_Address}
+        if ($P81_Remaining_Routes.count -ne 0) {
+            Write-Host "Could not remove all default routes from Interface. $($P81_Remaining_Routes.count) remaining. Exiting Script" -ForegroundColor Red
+            break
         }
+        #Add Routes for $FQDN's specified earlier.
         foreach($IP in $IPs){
             try {
                 New-NetRoute -DestinationPrefix $IP.ip -InterfaceIndex $P81_Interface.ifIndex -RouteMetric 10 -ErrorAction stop | Out-Null
@@ -141,4 +151,4 @@ function Set-P81routes{
 
     }
 }
-Set-P81routes -export
+Set-P81routes -list_only
