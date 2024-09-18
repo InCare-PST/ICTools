@@ -1,6 +1,7 @@
 function Set-P81routes{
     [CmdletBinding(DefaultParameterSetName="default",SupportsShouldProcess = $True)]
     param (
+        
         [Parameter(ParameterSetName='import')]
         [switch]$import = $false,
 
@@ -140,4 +141,4 @@ function Set-P81routes{
 
     }
 }
-Set-P81routes
+Set-P81routes -export
