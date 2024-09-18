@@ -40,7 +40,7 @@ function Set-P81routes{
             Write-Host "Could not get local IP of P81 adapter."
             Break
         } else {
-            Write-Host "P81 adapter IP found as $P81_Address" -ForegroundColor Green
+            Write-Host "P81 adapter IP is $P81_Address" -ForegroundColor Green
         }
         #Check current P81 routing
         $P81_Routes = Get-NetRoute -InterfaceIndex $P81_Interface.ifIndex | Where-Object {$_.DestinationPrefix -notmatch $P81_Address}
@@ -59,7 +59,18 @@ function Set-P81routes{
         }
         #Set the list of DNS names to route through P81
         if($import){
-            $FQDNS = Get-Content -Path $path
+            if (Test-Path $path) {
+                $target = Get-ChildItem -Path $path
+            }else {
+                Write-Host "$path is not a valid file path." -ForegroundColor Yellow
+            }
+            if ($target.Extension -match ".csv") {
+                $import_csv_file = Import-Csv -Path $path
+                $FQDNS = $import_csv_file | Select-Object -ExpandProperty FQDNS
+            }elseif ($target.Extension -match ".txt") {
+                $FQDNS = Get-Content -Path $path
+            }
+            #$FQDNS = Get-Content -Path $path
         }else{
             $FQDNS = @(
                 "vcloud.thrivenextgen.com",
@@ -151,4 +162,4 @@ function Set-P81routes{
 
     }
 }
-Set-P81routes -list_only
+Set-P81routes
