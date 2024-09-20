@@ -5,7 +5,7 @@ function Get-SubscriptionInfo{
 
         [string]$clientname = "",
 
-        [string]$scope = "User.Read.All,Organization.Read.All,AuditLog.Read.All,Directory.Read.All,Reports.Read.All",
+        [string]$scope = "User.Read.All,Organization.Read.All,AuditLog.Read.All,Directory.Read.All,Reports.Read.All,ReportSettings.ReadWrite.All",
 
         [string]$filename = "MappingFile.csv"
     )
@@ -83,6 +83,8 @@ function Get-SubscriptionInfo{
         }
         # Connect to Microsoft Graph using Connect-MgGraph with specified scope
         Connect-MgGraph -Scopes $scope -NoWelcome
+
+        $reportsetting = Get-MgBetaAdminReportSetting
        
     }
 
