@@ -1284,7 +1284,7 @@ function Get-SubscriptionInfo{
 
         [string]$clientname = "",
 
-        [string]$scope = "User.Read.All,Organization.Read.All,AuditLog.Read.All,Directory.Read.All,Reports.Read.All",
+        [string]$scope = "User.Read.All,Organization.Read.All,AuditLog.Read.All,Directory.Read.All,Reports.Read.All,ReportSettings.ReadWrite.All",
 
         [string]$filename = "MappingFile.csv"
     )
@@ -1362,11 +1362,19 @@ function Get-SubscriptionInfo{
         }
         # Connect to Microsoft Graph using Connect-MgGraph with specified scope
         Connect-MgGraph -Scopes $scope -NoWelcome
-       
+        #Retrieve the current "Concealed reports setting"
+        $reportsetting = Get-MgBetaAdminReportSetting       
     }
 
     process{
 
+        if($reportsetting.DisplayConcealedNames){
+            $report_params = @{
+                displayConcealedNames = $false
+            }
+            Update-MgBetaAdminReportSetting -BodyParameter $report_params
+            #Write-Host "Changing Concealed Report settings to export data." -ForegroundColor Green
+        }
         # Retrieve information for each mailbox
         try {
             $mailboxes = Get-MgBetaUser -All -Property signinactivity -ErrorAction Stop -ErrorVariable NoSignin
@@ -1465,11 +1473,17 @@ function Get-SubscriptionInfo{
     }
 
     end{
-
+        #Put the report sesttings back the way we found them.
+        if($reportsetting.DisplayConcealedNames){
+            $report_params = @{
+                displayConcealedNames = $true
+            }
+            Update-MgBetaAdminReportSetting -BodyParameter $report_params
+            #Write-Host "Changing Concealed Report settings back to previuos settings." -ForegroundColor Green
+        }
+        #Disconnect from Graph
         Disconnect-MgGraph -InformationAction SilentlyContinue -ErrorAction SilentlyContinue
     }
-
-
 }
 function Set-P81routes{
     #Requires -RunAsAdministrator
