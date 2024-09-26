@@ -12,7 +12,7 @@
 RootModule = 'ICTools'
 
 # Version number of this module.
-ModuleVersion = '1.1.0.1'
+ModuleVersion = '1.1.0.2'
 
 # Supported PSEditions
 # CompatiblePSEditions = @()
@@ -69,7 +69,7 @@ Copyright = '(c) 2022 InCare SpecOps. All rights reserved.'
 # NestedModules = @()
 
 # Functions to export from this module, for best performance, do not use wildcards and do not delete the entry, use an empty array if there are no functions to export.
-FunctionsToExport = @("Get-InactiveUsers","Get-OnlineADComps","Add-DHCPv4Reservation","Get-LTServerAdd","Set-LTServerAdd","Protect-Creds","Update-ICTools","Import-ICTHistory","Install-PSExec","Set-FixCellular","Set-Immutid","Get-FSMORoles","Get-ServiceAccounts","Find-Folders","Get-SubscriptionInfo","Set-P81routes")
+FunctionsToExport = @("Get-InactiveUsers","Get-OnlineADComps","Add-DHCPv4Reservation","Get-LTServerAdd","Set-LTServerAdd","Protect-Creds","Update-ICTools","Import-ICTHistory","Install-PSExec","Set-FixCellular","Set-Immutid","Get-FSMORoles","Get-ServiceAccounts","Find-Folders","Get-SubscriptionInfo","Set-P81routes","Get-P81routes")
 
 # Cmdlets to export from this module, for best performance, do not use wildcards and do not delete the entry, use an empty array if there are no cmdlets to export.
 CmdletsToExport = @()

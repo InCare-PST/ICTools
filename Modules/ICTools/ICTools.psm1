@@ -1650,4 +1650,7 @@ function Set-P81routes{
     }
 }
 
-Export-ModuleMember -Function Get-FSMORoles, Set-Immutid, Set-LTServerAdd, Get-InactiveUsers, Remove-MalFiles, Get-OnlineADComps, Add-DHCPv4Reservation, Get-LTServerAdd, Protect-Creds, Update-ICTools, Install-PSExec, Import-ICTHistory, Set-FixCellular, Get-ServiceAccounts, Find-Folders, Get-SubscriptionInfo,Set-P81routes
+function Get-P81routes{
+    Set-P81routes -list_only
+}
+Export-ModuleMember -Function Get-FSMORoles, Set-Immutid, Set-LTServerAdd, Get-InactiveUsers, Remove-MalFiles, Get-OnlineADComps, Add-DHCPv4Reservation, Get-LTServerAdd, Protect-Creds, Update-ICTools, Install-PSExec, Import-ICTHistory, Set-FixCellular, Get-ServiceAccounts, Find-Folders, Get-SubscriptionInfo, Set-P81routes, Get-P81routes
