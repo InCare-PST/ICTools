@@ -45,7 +45,7 @@ function Set-P81routes{
         #Check current P81 routing
         $P81_Routes = Get-NetRoute -InterfaceIndex $P81_Interface.ifIndex | Where-Object {$_.DestinationPrefix -notmatch $P81_Address}
         #If it looks like the script has already been run, verify that the user wants to run it again.
-        if ($P81_Routes.count -ne 3 -and !$list_only) {
+        if ($P81_Routes.count -gt 3 -and !$list_only -and ![bool]$append) {
             Add-Type -AssemblyName PresentationCore,PresentationFramework
             $ButtonType = [System.Windows.MessageBoxButton]::YesNo
             $MessageboxTitle = “Confirm P81 Route Renewal”
@@ -70,7 +70,8 @@ function Set-P81routes{
             }elseif ($target.Extension -match ".txt") {
                 $FQDNS = Get-Content -Path $path
             }
-            #$FQDNS = Get-Content -Path $path
+        }elseif ([bool]$append) {
+            $FQDNS = $append
         }else{
             $FQDNS = @(
                 "vcloud.thrivenextgen.com",
