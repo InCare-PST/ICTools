@@ -146,26 +146,30 @@ function Set-P81routes{
         if ([bool]$append) {
                 foreach ($IP in $IPs) {
                     $New_appended_route = Get-NetRoute -InterfaceIndex $P81_Interface.ifIndex | Where-Object {$_.DestinationPrefix -match $IP.IP}
+                    if ([bool]$New_appended_route) {
+                        Write-Host "Route to $($IP.Name) at $($IP.IP) added to P81"
+                    }
                 }
-            $New_P81_Routes = Get-NetRoute -InterfaceIndex $P81_Interface.ifIndex | Where-Object {$_.DestinationPrefix -match $IPs.IP}
-        }
-        $New_P81_Routes = Get-NetRoute -InterfaceIndex $P81_Interface.ifIndex | Where-Object {$_.DestinationPrefix -notmatch $P81_Address}
+        }else {
+            $New_P81_Routes = Get-NetRoute -InterfaceIndex $P81_Interface.ifIndex | Where-Object {$_.DestinationPrefix -notmatch $P81_Address}
         
-        $ref_objects = @{
-            ReferenceObject = ($IPs.IP)
-            DifferenceObject = ($New_P81_Routes.DestinationPrefix)
-        }
-
-        $compare = Compare-Object @ref_objects
-
-        if($compare.count -ne 0){
-            foreach ($item in $compare) {
-                $error_item = $IPs | Where-Object {$_.IP -match $item.InputObject}
-                Write-Host "Route for $($error_item.Name) with IP Address of $($error_item.IP) could not be added." -ForegroundColor Red
+            $ref_objects = @{
+                ReferenceObject = ($IPs.IP)
+                DifferenceObject = ($New_P81_Routes.DestinationPrefix)
             }
-        }else{
-            Write-Host "All routes were successfully added." -ForegroundColor Green
+    
+            $compare = Compare-Object @ref_objects
+    
+            if($compare.count -ne 0){
+                foreach ($item in $compare) {
+                    $error_item = $IPs | Where-Object {$_.IP -match $item.InputObject}
+                    Write-Host "Route for $($error_item.Name) with IP Address of $($error_item.IP) could not be added." -ForegroundColor Red
+                }
+            }else{
+                Write-Host "All routes were successfully added." -ForegroundColor Green
+            }       
         }
+
     }
     End{
 
