@@ -123,14 +123,16 @@ function Set-P81routes{
         }
     }
     process{
-        #Removing Current routes
-        $P81_Routes | Remove-NetRoute -Confirm:$false -ErrorAction SilentlyContinue
-        #check to make sure all routes were removed. 
-        $P81_Remaining_Routes = Get-NetRoute -InterfaceIndex $P81_Interface.ifIndex | Where-Object {$_.DestinationPrefix -notmatch $P81_Address}
-        if ($P81_Remaining_Routes.count -ne 0) {
-            Write-Host "Could not remove all default routes from Interface. $($P81_Remaining_Routes.count) remaining. Exiting Script" -ForegroundColor Red
-            break
-        }
+        #Removing Current routes unless $append is chosen
+        if (![bool]$append) {
+                $P81_Routes | Remove-NetRoute -Confirm:$false -ErrorAction SilentlyContinue
+                #check to make sure all routes were removed. 
+                $P81_Remaining_Routes = Get-NetRoute -InterfaceIndex $P81_Interface.ifIndex | Where-Object {$_.DestinationPrefix -notmatch $P81_Address}
+                if ($P81_Remaining_Routes.count -ne 0) {
+                    Write-Host "Could not remove all default routes from Interface. $($P81_Remaining_Routes.count) remaining. Exiting Script" -ForegroundColor Red
+                    break
+                }
+            }
         #Add Routes for $FQDN's specified earlier.
         foreach($IP in $IPs){
             try {
@@ -141,6 +143,12 @@ function Set-P81routes{
             } 
         }
         #Check the new routes
+        if ([bool]$append) {
+                foreach ($IP in $IPs) {
+                    $New_appended_route = Get-NetRoute -InterfaceIndex $P81_Interface.ifIndex | Where-Object {$_.DestinationPrefix -match $IP.IP}
+                }
+            $New_P81_Routes = Get-NetRoute -InterfaceIndex $P81_Interface.ifIndex | Where-Object {$_.DestinationPrefix -match $IPs.IP}
+        }
         $New_P81_Routes = Get-NetRoute -InterfaceIndex $P81_Interface.ifIndex | Where-Object {$_.DestinationPrefix -notmatch $P81_Address}
         
         $ref_objects = @{
