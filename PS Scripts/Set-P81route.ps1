@@ -147,7 +147,7 @@ function Set-P81routes{
                 foreach ($IP in $IPs) {
                     $New_appended_route = Get-NetRoute -InterfaceIndex $P81_Interface.ifIndex | Where-Object {$_.DestinationPrefix -match $IP.IP}
                     if ([bool]$New_appended_route) {
-                        Write-Host "Route to $($IP.Name) at $($IP.IP) added to P81"
+                        Write-Host "Route to $($IP.Name) at $($IP.IP) added to P81" -ForegroundColor Green
                     }
                 }
         }else {
