@@ -1562,6 +1562,7 @@ function Set-P81routes{
         }else{
             $FQDNS = @(
                 "vcloud.thrivenextgen.com",
+                "cloud.thrivenextgen.com",
                 "ks.thrivenetworks.com",
                 "vsa02.thrivenetworks.com",
                 "vsa03.thrivenextgen.com",
@@ -1571,7 +1572,8 @@ function Set-P81routes{
                 "vsa07.thrivenextgen.com",
                 "vsa08.thrivenextgen.com",
                 "vsa09.thrivenextgen.com",
-                "vsa10.thrivenextgen.com"
+                "vsa10.thrivenextgen.com",
+                "ukvsa01.thrivenextgen.co.uk"
             )
         }
         # Resolve the FQDNs to IP addresses for later use
