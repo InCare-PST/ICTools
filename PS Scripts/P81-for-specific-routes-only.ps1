@@ -7,7 +7,7 @@ param (
 
 # List of FQDNs
 [System.Reflection.Assembly]::LoadWithPartialName('Microsoft.VisualBasic') | Out-Null
-$FQDNsPre = @("vcloud.thrivenextgen.com", "vsa05.thrivenextgen.com", "vsa06.thrivenextgen.com", "vsa07.thrivenextgen.com", "vsa08.thrivenextgen.com", "vsa09.thrivenextgen.com","vsa10.thrivenextgen.com")
+$FQDNsPre = @("vcloud.thrivenextgen.com","cloud.thrivenextgen.com","ks.thrivenetworks.com","vsa02.thrivenetworks.com","vsa03.thrivenextgen.com","vsa04.thrivenetworks.com", "vsa05.thrivenextgen.com", "vsa06.thrivenextgen.com", "vsa07.thrivenextgen.com", "vsa08.thrivenextgen.com", "vsa09.thrivenextgen.com","vsa10.thrivenextgen.com","ukvsa01.thrivenextgen.co.uk")
 if($Add){$FQDNsAdd = [Microsoft.VisualBasic.Interaction]::InputBox("Enter Additional FQDNs Requested", "FQDNs", "")}
 
 $FQDNs = @()

@@ -45,7 +45,7 @@ function Set-P81routes{
         #Check current P81 routing
         $P81_Routes = Get-NetRoute -InterfaceIndex $P81_Interface.ifIndex | Where-Object {$_.DestinationPrefix -notmatch $P81_Address}
         #If it looks like the script has already been run, verify that the user wants to run it again.
-        if ($P81_Routes.count -ne 3 -and !$list_only) {
+        if ($P81_Routes.count -gt 3 -and !$list_only -and ![bool]$append) {
             Add-Type -AssemblyName PresentationCore,PresentationFramework
             $ButtonType = [System.Windows.MessageBoxButton]::YesNo
             $MessageboxTitle = “Confirm P81 Route Renewal”
@@ -70,7 +70,8 @@ function Set-P81routes{
             }elseif ($target.Extension -match ".txt") {
                 $FQDNS = Get-Content -Path $path
             }
-            #$FQDNS = Get-Content -Path $path
+        }elseif ([bool]$append) {
+            $FQDNS = $append
         }else{
             $FQDNS = @(
                 "vcloud.thrivenextgen.com",
@@ -122,14 +123,16 @@ function Set-P81routes{
         }
     }
     process{
-        #Removing Current routes
-        $P81_Routes | Remove-NetRoute -Confirm:$false -ErrorAction SilentlyContinue
-        #check to make sure all routes were removed. 
-        $P81_Remaining_Routes = Get-NetRoute -InterfaceIndex $P81_Interface.ifIndex | Where-Object {$_.DestinationPrefix -notmatch $P81_Address}
-        if ($P81_Remaining_Routes.count -ne 0) {
-            Write-Host "Could not remove all default routes from Interface. $($P81_Remaining_Routes.count) remaining. Exiting Script" -ForegroundColor Red
-            break
-        }
+        #Removing Current routes unless $append is chosen
+        if (![bool]$append) {
+                $P81_Routes | Remove-NetRoute -Confirm:$false -ErrorAction SilentlyContinue
+                #check to make sure all routes were removed. 
+                $P81_Remaining_Routes = Get-NetRoute -InterfaceIndex $P81_Interface.ifIndex | Where-Object {$_.DestinationPrefix -notmatch $P81_Address}
+                if ($P81_Remaining_Routes.count -ne 0) {
+                    Write-Host "Could not remove all default routes from Interface. $($P81_Remaining_Routes.count) remaining. Exiting Script" -ForegroundColor Red
+                    break
+                }
+            }
         #Add Routes for $FQDN's specified earlier.
         foreach($IP in $IPs){
             try {
@@ -140,23 +143,33 @@ function Set-P81routes{
             } 
         }
         #Check the new routes
-        $New_P81_Routes = Get-NetRoute -InterfaceIndex $P81_Interface.ifIndex | Where-Object {$_.DestinationPrefix -notmatch $P81_Address}
+        if ([bool]$append) {
+                foreach ($IP in $IPs) {
+                    $New_appended_route = Get-NetRoute -InterfaceIndex $P81_Interface.ifIndex | Where-Object {$_.DestinationPrefix -match $IP.IP}
+                    if ([bool]$New_appended_route) {
+                        Write-Host "Route to $($IP.Name) at $($IP.IP) added to P81" -ForegroundColor Green
+                    }
+                }
+        }else {
+            $New_P81_Routes = Get-NetRoute -InterfaceIndex $P81_Interface.ifIndex | Where-Object {$_.DestinationPrefix -notmatch $P81_Address}
         
-        $ref_objects = @{
-            ReferenceObject = ($IPs.IP)
-            DifferenceObject = ($New_P81_Routes.DestinationPrefix)
-        }
-
-        $compare = Compare-Object @ref_objects
-
-        if($compare.count -ne 0){
-            foreach ($item in $compare) {
-                $error_item = $IPs | Where-Object {$_.IP -match $item.InputObject}
-                Write-Host "Route for $($error_item.Name) with IP Address of $($error_item.IP) could not be added." -ForegroundColor Red
+            $ref_objects = @{
+                ReferenceObject = ($IPs.IP)
+                DifferenceObject = ($New_P81_Routes.DestinationPrefix)
             }
-        }else{
-            Write-Host "All routes were successfully added." -ForegroundColor Green
+    
+            $compare = Compare-Object @ref_objects
+    
+            if($compare.count -ne 0){
+                foreach ($item in $compare) {
+                    $error_item = $IPs | Where-Object {$_.IP -match $item.InputObject}
+                    Write-Host "Route for $($error_item.Name) with IP Address of $($error_item.IP) could not be added." -ForegroundColor Red
+                }
+            }else{
+                Write-Host "All routes were successfully added." -ForegroundColor Green
+            }       
         }
+
     }
     End{
 
