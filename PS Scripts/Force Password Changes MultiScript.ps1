@@ -6,6 +6,7 @@ import-module ActiveDirectory
 $usersnever = Get-ADUser -Filter {PasswordNeverExpires -eq $true}
 $usersnever = $usersnever | Where-Object SamAccountName -notlike "Thrive*"
 $usersnever = $usersnever | Where-Object SamAccountName -notlike "TDServ*"
+$usersnever = $usersnever | Where-Object SamAccountName -notlike "ADSyncMSA7f3b3$"
 
 #verify no thrive!
 $usersnever | Sort-Object SamAccountName 
@@ -24,18 +25,22 @@ foreach($u in $usersnever){try{
 $users = Get-ADUser -Filter {Enabled -eq $true}
 $users = $users | Where-Object SamAccountName -notlike "Thrive*"
 $users = $users | Where-Object SamAccountName -notlike "TDServ*"
+#$users = $users | Where-Object SamAccountName -notlike "ADSyncMSA7f3b3$"
+$users = $users | Where-object  {($_.DistinguishedName -notlike "*OU=Services*") -and ($_.Enabled -eq $True)}
 
 #verify users before forcing password change at login
 $users | Select-Object SamAccountName
 
 #script to force password change at next login
 foreach($u in $users){try {
-    get-aduser $u.samaccountname | Set-ADUser -ChangePasswordAtLogon $true
-}
-catch {
+    #get-aduser $u.samaccountname | Set-ADUser -ChangePasswordAtLogon $true
+    get-aduser $u.samaccountname -Properties * | Select SamAccountName,PasswordNeverExpires,PasswordExpired
+} catch {
     Write-Host "Failed to expire password for user: $($user.SamAccountName). Error: $_"
 }
 }
+
+
 
 #Disable Domain Admin accounts not thrive
 $domainadmins = Get-ADGroupMember -Identity "Domain Admins" -Recursive | Get-ADUser -Property SamAccountName
