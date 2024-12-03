@@ -175,3 +175,4 @@ function Set-P81routes{
 
     }
 }
+Set-P81routes
