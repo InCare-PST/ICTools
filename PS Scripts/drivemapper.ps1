@@ -7,9 +7,12 @@ param(
 [switch]$save,
 [switch]$clearsaved
 )
+
+
 #Variables
 $sfolder = "$env:USERPROFILE\Secure"
 $sfile = "$sfolder\thrive.xml"
+$adip = '10.10.0.4'
 
 #Set drives to map here, drive letter, path, label
 $driveMaps = @(
@@ -87,7 +90,16 @@ function Save{
     }
 }
 
+function TestConnection{
+    if(!(Test-Connection $adip -Count 1 -Quiet)){
+        Add-Type -AssemblyName System.Windows.Forms | Out-Null
+        $box = [System.Windows.Forms.MessageBox]::Show("Can not communicate with Azure AD, please add routes or use local DNS.","Routing Error!",[System.Windows.Forms.MessageBoxButtons]::OK)
+    }
+    if($box -eq 'OK'){Exit}
+    
+}
 
+TestConnection
 
 if($enum){ShowDrives}
 if($delete){Delete}
