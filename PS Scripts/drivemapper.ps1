@@ -3,8 +3,13 @@ param(
 [switch]$Netuse,
 [switch]$kaseya,
 [switch]$delete,
-[switch]$enum
+[switch]$enum,
+[switch]$save,
+[switch]$clearsaved
 )
+#Variables
+$sfolder = "$env:USERPROFILE\Secure"
+$sfile = "$sfolder\thrive.xml"
 
 #Set drives to map here, drive letter, path, label
 $driveMaps = @(
@@ -68,23 +73,45 @@ function Delete{
     Exit
 }
 
+function ClearSaved{
+    Remove-item -Path $sfile
+}
+
+function Save{
+    if(!(test-path $sfolder)){mkdir $sfolder}
+    if(test-path $sfile){write-host "Credentials already saved on this computer, if not working use [clearsaved] flag"}
+    else {
+    Get-Credential | export-clixml -Path $sfile
+    attrib.exe +h +s $sfile
+    attrib.exe +h +s $sfolder
+    }
+}
+
+
 
 if($enum){ShowDrives}
 if($delete){Delete}
 if($netuse){OldSchool}
+if($save){Save}
+if($clearsaved){ClearSaved}
 
 
 
 
-if(Test-Connection -ComputerName eds.kittyhawkinc.com -Count 1 -Quiet){
+#if(Test-Connection -ComputerName eds.kittyhawkinc.com -Count 1 -Quiet){
 #Credentials collection
+
 if([bool]$kaseya){
     $User = Read-Host -Prompt 'Enter an email address'
     $PWord = Read-Host -Prompt 'Enter a Password' -AsSecureString
     $creds = New-Object -TypeName System.Management.Automation.PSCredential -ArgumentList $User, $PWord
 }
 if(!($creds)){
+    if(test-path $sfile){$creds = Import-Clixml -Path $sfile
+    }else{
     $creds = Get-Credential
+}
+    
 }
 #Map Drives
 foreach($drive in $driveMaps){
@@ -96,7 +123,4 @@ foreach($drive in $driveMaps){
     $null = New-PSDrive -PSProvider FileSystem -Name $drive.Letter -Root $drive.Path -Description $drive.Label -Credential $creds -Scope global -ErrorAction Stop -Persist
 
 }
-}else{
-write-host No Connection at this time -ForegroundColor Red
-Exit
-}
+
