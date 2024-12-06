@@ -18,6 +18,9 @@
 .DESCRIPTION
     Allows users to map, save, test, delete network shares for their NAS device. 
 
+Command to add scheduled task: "schtasks.exe /Create /SC ONLOGON /ru "BUILTIN\Users" /TN "KH-Albany\Login Script" /TR "'%SystemRoot%\system32\WindowsPowerShell\v1.0\powershell.exe' -windowstyle hidden -noninteractive -ExecutionPolicy Bypass -File c:\ThriveAgent\drivemapper.ps1" /F"
+
+
 #>
 param(
 [switch]$Netuse,
@@ -87,8 +90,8 @@ function OldSchool{
         }catch{
             Add-Type -AssemblyName PresentationCore,PresentationFramework
             $ButtonType = [System.Windows.MessageBoxButton]::OK
-            $MessageboxTitle = “Misc error”
-            $Messageboxbody = “Unable to map drive $($drive.Letter): `n$($_.Exception.Message) `n$(get-date)”
+            $MessageboxTitle = "Misc error"
+            $Messageboxbody = "Unable to map drive $($drive.Letter): `n$($_.Exception.Message) `n$(get-date)"
             $MessageIcon = [System.Windows.MessageBoxImage]::Error
             [System.Windows.MessageBox]::Show($Messageboxbody,$MessageboxTitle,$ButtonType,$messageicon)
 
@@ -124,8 +127,11 @@ function Delete{
 }
 
 function ClearSaved{
-    Remove-item -Path $sfile
-    Remove-item -Path $sfirst
+    attrib.exe -h $sfile
+    attrib.exe -h $sfirst
+    Remove-item -Path $sfile -ErrorAction SilentlyContinue
+    Remove-item -Path $sfirst -ErrorAction SilentlyContinue
+    Exit
 }
 
 function Save{
@@ -157,8 +163,8 @@ function TestConnection{
 function FirstRun{
     Add-Type -AssemblyName PresentationCore,PresentationFramework
     $ButtonType = [System.Windows.MessageBoxButton]::YesNo
-    $MessageboxTitle = “Save Prompt”
-    $Messageboxbody = “This is your first time mapping the drives, would you like to save your credentials?”
+    $MessageboxTitle = "Save Prompt"
+    $Messageboxbody = "This is your first time mapping the drives, would you like to save your credentials?"
     $MessageIcon = [System.Windows.MessageBoxImage]::Question
     $answer = [System.Windows.MessageBox]::Show($Messageboxbody,$MessageboxTitle,$ButtonType,$messageicon)
     if(!(test-path $sfolder)){mkdir $sfolder}
@@ -198,33 +204,34 @@ foreach($drive in $driveMaps){
         start-sleep -Seconds 2
     }
     try{
-        $null = New-PSDrive -PSProvider FileSystem -Name $drive.Letter -Root $drive.Path -Description $drive.Label -Credential $creds -Scope global -ErrorAction Stop -Persist
+        New-PSDrive -PSProvider FileSystem -Name $drive.Letter -Root $drive.Path -Description $drive.Label -Credential $creds -Scope global -ErrorAction Stop -Persist
     }catch{
         if($_.Exception.Message -eq "The specified network password is not correct."){
             #Write-Host "Unable to map drive due to invalid credentials."
             Add-Type -AssemblyName PresentationCore,PresentationFramework
             $ButtonType = [System.Windows.MessageBoxButton]::OK
-            $MessageboxTitle = “Password error”
-            $Messageboxbody = “Your password is incorrect, clearing your saved credentials”
+            $MessageboxTitle = "Password error"
+            $Messageboxbody = "Your password is incorrect, clearing your saved credentials"
             $MessageIcon = [System.Windows.MessageBoxImage]::Warning
             $answer = [System.Windows.MessageBox]::Show($Messageboxbody,$MessageboxTitle,$ButtonType,$messageicon)
-        }
-        if($answer -eq 'OK'){
-            ClearSaved
-            Exit
-        }
+                if($answer -eq 'OK'){
+                    ClearSaved
+                    Exit
+                }
         }else{
             #Write-Host "Unable to map drive $($drive.Letter):"
             #Write-Error $_.Exception.Message 
             Add-Type -AssemblyName PresentationCore,PresentationFramework
             $ButtonType = [System.Windows.MessageBoxButton]::OK
-            $MessageboxTitle = “Misc error”
-            $Messageboxbody = “Unable to map drive $($drive.Letter): `n$($_.Exception.Message)”
+            $MessageboxTitle = "Misc error"
+            $Messageboxbody = "Unable to map drive $($drive.Letter): `n$($_.Exception.Message)"
             $MessageIcon = [System.Windows.MessageBoxImage]::Warning
             $answer = [System.Windows.MessageBox]::Show($Messageboxbody,$MessageboxTitle,$ButtonType,$messageicon)
                 if($answer -eq 'OK'){
+                    ClearSaved
                     Exit
                 }
              }
         }
+    }
 
