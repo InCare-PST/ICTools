@@ -22,13 +22,21 @@ Command to add scheduled task: "schtasks.exe /Create /SC ONLOGON /ru "BUILTIN\Us
 
 
 #>
+
 param(
+
 [switch]$Netuse,
+
 [switch]$kaseya,
+
 [switch]$delete,
+
 [switch]$enum,
+
 [switch]$save,
+
 [switch]$clearsaved
+
 )
 
 
@@ -192,16 +200,30 @@ if([bool]$kaseya){
 if(!($creds)){
     if(test-path $sfile){$creds = Import-Clixml -Path $sfile
     }else{
-    $creds = Get-Credential
+        $creds = Get-Credential
+    }
 }
-    
+
+#Final check to see if any creds are present
+if(!($creds)){
+    Add-Type -AssemblyName PresentationCore,PresentationFramework
+    $ButtonType = [System.Windows.MessageBoxButton]::OK
+    $MessageboxTitle = "Credential Error!"
+    $Messageboxbody = "You did not enter crendentials to map a drive, closing"
+    $MessageIcon = [System.Windows.MessageBoxImage]::Error
+    $answer = [System.Windows.MessageBox]::Show($Messageboxbody,$MessageboxTitle,$ButtonType,$messageicon)
+        if($answer -eq 'OK'){
+            Exit
+        }
 }
-#Map Drives
+
+#Map Drives section
+
 foreach($drive in $driveMaps){
     if(Test-path "$($drive.letter):"){
-        write-host "Cleaning up old mapped drive $($drive.letter):"
-        cmd.exe /c "net use $($drive.letter): /del /y 2>null"
-        start-sleep -Seconds 2
+        #write-host "Cleaning up old mapped drive $($drive.letter):"
+        net use "$($drive.letter):" /del /y 2>null
+        #start-sleep -Seconds 2
     }
     try{
         New-PSDrive -PSProvider FileSystem -Name $drive.Letter -Root $drive.Path -Description $drive.Label -Credential $creds -Scope global -ErrorAction Stop -Persist
@@ -212,7 +234,7 @@ foreach($drive in $driveMaps){
             $ButtonType = [System.Windows.MessageBoxButton]::OK
             $MessageboxTitle = "Password error"
             $Messageboxbody = "Your password is incorrect, clearing your saved credentials"
-            $MessageIcon = [System.Windows.MessageBoxImage]::Warning
+            $MessageIcon = [System.Windows.MessageBoxImage]::Error
             $answer = [System.Windows.MessageBox]::Show($Messageboxbody,$MessageboxTitle,$ButtonType,$messageicon)
                 if($answer -eq 'OK'){
                     ClearSaved
@@ -225,10 +247,10 @@ foreach($drive in $driveMaps){
             $ButtonType = [System.Windows.MessageBoxButton]::OK
             $MessageboxTitle = "Misc error"
             $Messageboxbody = "Unable to map drive $($drive.Letter): `n$($_.Exception.Message)"
-            $MessageIcon = [System.Windows.MessageBoxImage]::Warning
+            $MessageIcon = [System.Windows.MessageBoxImage]::Error
             $answer = [System.Windows.MessageBox]::Show($Messageboxbody,$MessageboxTitle,$ButtonType,$messageicon)
                 if($answer -eq 'OK'){
-                    ClearSaved
+                    #ClearSaved
                     Exit
                 }
              }
