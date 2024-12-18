@@ -84,7 +84,9 @@ function Set-P81routes{
                 "vsa07.thrivenextgen.com",
                 "vsa08.thrivenextgen.com",
                 "vsa09.thrivenextgen.com",
-                "vsa10.thrivenextgen.com"
+                "vsa10.thrivenextgen.com",
+                "fm01.thrivenetworks.com",
+                "fm01.thrivenextgen.com"
             )
         }
         # Resolve the FQDNs to IP addresses for later use
