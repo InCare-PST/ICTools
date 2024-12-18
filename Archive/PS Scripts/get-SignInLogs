@@ -1,0 +1,73 @@
+#Config Parameters
+$CSVPath = "C:\Temp\REMCOSigninLogs.csv"
+$SigninLogs = @()
+ 
+#Connect to Azure AD
+#Connect-AzureAD | Out-Null
+ 
+#Get All users from Azure AD
+$AllUsers = Get-AzureADUser -All $true
+$TotalUsers = $AllUsers.Count
+ 
+#Function to get the last login time stamp of the user
+Function Get-UserLastLogin([string] $UserObjectID)
+{
+    Try {
+        Write-host -f Yellow "Collecting Last Login date of the User Object:"$UserObjectID
+ 
+        #Get the Successful Signin Logs of the user
+        $SigninLog = Get-AzureADAuditSignInLogs -All:$true -Filter "userID eq '$UserObjectID' and status/errorCode eq 0" | Select -First 1
+ 
+        #Return Last Login Date
+        $LoginDetails = New-Object psobject -Property @{
+            LoginTime = $SigninLog.CreatedDateTime
+            App = $SigninLog.AppDisplayName
+        }
+        Return $LoginDetails
+    }
+    Catch {
+        $message = $_
+        If ($message -like "*Too Many Requests*")
+        {
+            Write-host "`tSleeping for 10 seconds due to throttling limitations..." -ForegroundColor Cyan
+            Sleep 10
+            #Recursive function call to retry the entry that was throttled
+            Get-UserLastLogin $UserObjectID
+        }
+        Else
+        {
+            Write-host $Message -ForegroundColor Red           
+        }
+    }
+}
+ 
+#Loop through all users
+$Counter = 1
+$AllUsers | ForEach-Object {
+    Write-Progress -Activity "Checking Signin Logs:" -Status "Processing $($_.UserPrincipalName) ($Counter of $TotalUsers)" -PercentComplete (($Counter / $TotalUsers) * 100) 
+    #Call the function to get the sign-in log
+    $SignInLog = Get-UserLastLogin $_.ObjectID
+     
+    #Get the Last Login Date
+    If ($SignInLog.LoginTime -eq $Null)
+    {
+        $LastLoginDate = "No Log-in Events Found!"
+    }
+    Else
+    {
+        $LastLoginDate = Get-Date $SignInLog.LoginTime
+    }
+ 
+    #Collect data
+    $SigninLogs += [PSCustomObject][ordered]@{
+        UserLoginName   = $_.UserPrincipalName
+        UserDisplayName   = $_.DisplayName
+        LastLogin  = $LastLoginDate
+        Application = $SignInLog.App
+    }
+    $Counter++
+}
+ 
+$SigninLogs
+#Export Data to CSV
+$SigninLogs | Export-Csv -Path $CSVPath -NoTypeInformation

@@ -1,0 +1,31 @@
+#function Get-MobileInformation{
+$csvpath = './Downloads/export.csv'
+$mailboxes = Get-Mailbox <# -ResultSize 50 #> | Where-Object {$_.RecipientTypeDetails -match "User"}
+foreach ($mailbox in $mailboxes) {
+#Null Old Variables
+	$info = $null
+   	$properties = $null
+	$export = $null
+
+#Gather Information
+		$info = Get-MobileDeviceStatistics -Mailbox $mailbox.userprincipalname #| Select-Object * -Last 1
+			if([bool]$info) {
+				$properties = @{
+					Username = $mailbox.userprincipalname
+					Device = $info.DeviceFriendlyName
+          			ClientVersion = $info.ClientVersion
+					DeviceOS = $info.DeviceOS
+					DeviceModel = $info.DeviceModel
+					DeviceType = $info.DeviceType
+					DeviceUserAgent = $info.DeviceUserAgent
+					ClientType = $info.ClientType
+					}
+#Export Function
+
+$export = New-Object psobject -Property $properties
+$export | Export-Csv -Append -Path $csvpath -NoTypeInformation
+
+							}
+}
+#}
+#Get-MobileInformation
