@@ -3,6 +3,20 @@ $URC = Get-Service | Where-Object {$_.DisplayName -like "*Umbrella*"}
 $connadapt = Get-NetAdapter | Where-Object Status -eq "Up" | Get-DnsClientServerAddress -AddressFamily IPv4
 $good = $connadapt | Where-Object ServerAddresses -ne $null
 
+function UninstallUmbrella{
+    Add-Type -AssemblyName PresentationCore,PresentationFramework
+    $ButtonType = [System.Windows.MessageBoxButton]::YesNo
+    $MessageboxTitle = "Uninstall Umbrella?"
+    $Messageboxbody = "Do you want to uninstall Umbrella"
+    $MessageIcon = [System.Windows.MessageBoxImage]::Question
+    $answer = [System.Windows.MessageBox]::Show($Messageboxbody,$MessageboxTitle,$ButtonType,$messageicon)
+    if ($answer -eq "Yes"){
+        wmic product where 'name like "%%Umbrella%%"' call uninstall
+    }else{
+        write-host "Please remedy this as soon as possible!"
+    }
+}
+
 if([bool]$dnsa -and $DNSA.status -eq "Running"){write-host $($dnsa) service installed and running}
 if([bool]$dnsa -and $DNSA.status -eq "Stopped"){write-host $($dnsa) service installed and stopped}
 if([bool]$urc-and $urc.status -eq "Running"){write-host $($urc.displayname) service installed and running}
@@ -33,11 +47,6 @@ if($dnsa.status -eq "Running" -and $urc.status -eq "Running"){
             }
         }
     }
-#Uninstall Umbrella?
-    $answer = read-host -prompt "Do you want to uninstall $($urc.displayname)(Y/N)"
-        if ($answer -like "Y"){
-            wmic product where 'name like "%%Umbrella%%"' call uninstall
-        }else{
-            write-host "Please remedy this as soon as possible!"
-        }
+    #Uninstall Umbrella?
+        UninstallUmbrella
 }
